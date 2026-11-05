@@ -74,6 +74,7 @@ export class Doodle {
     this.pixels = new Uint8Array(width * height);
     this.underlay = null; // 1 where the label itself is dark: the bucket stops there
     this._undo = [];
+    this._redo = [];
     this._start = null;
     this._last = null;
     this._now = null;
@@ -84,16 +85,25 @@ export class Doodle {
 
   isEmpty() { return !this.pixels.some((v) => v); }
   canUndo() { return this._undo.length > 0; }
-  setMask(mask) { this.pixels = Uint8Array.from(mask); this._undo = []; this._start = null; }
+  canRedo() { return this._redo.length > 0; }
+  setMask(mask) { this.pixels = Uint8Array.from(mask); this._undo = []; this._redo = []; this._start = null; }
   setUnderlay(dark) { this.underlay = dark; }
 
   _remember() {
+    this._redo = [];
     this._undo.push(this.pixels.slice());
     if (this._undo.length > this.undoLimit) this._undo.shift();
   }
   undo() {
     if (!this._undo.length) return false;
+    this._redo.push(this.pixels);
     this.pixels = this._undo.pop();
+    return true;
+  }
+  redo() {
+    if (!this._redo.length) return false;
+    this._undo.push(this.pixels);
+    this.pixels = this._redo.pop();
     return true;
   }
   clear() {
@@ -228,10 +238,12 @@ export class Doodle {
 
   down(x, y) {
     const at = [x, y];
+    const redo = this._redo;
     this._remember();
     if (this.tool === "fill") {
       if (this._bucket(at)) return true;
       this._undo.pop(); // nothing changed, so nothing to undo
+      this._redo = redo;
       return false;
     }
     this._start = this._last = this._now = at;
