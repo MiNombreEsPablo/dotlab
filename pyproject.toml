@@ -21,14 +21,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# The web UI in a native window: `t003-gui --web`. Windows (WebView2) and macOS (WKWebView) use what the system has. Linux
-# uses WebKitGTK if the system has it (webkit2gtk and PyGObject from the distro: small), else `web-qt` brings QtWebEngine.
-web = ["pywebview>=5.3"]
-web-qt = ["pywebview[pyside6]>=5.3"]
 dev = ["pytest"]
 
 [project.scripts]
-t003-gui = "t003gui.launcher:main"
 t003-print = "t003gui.cli:main"
 
 [tool.setuptools.dynamic]

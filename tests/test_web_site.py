@@ -54,8 +54,8 @@ def test_every_bundled_font_has_its_licence_on_the_site(site):
 def test_the_site_has_only_what_the_browser_needs(site):
     out, manifest, _ = site
     python = {p.relative_to(out).as_posix() for p in out.rglob("*.py")}
-    assert python == {f"engine/{name}" for name in manifest["python"]}  # no dev server, desktop shell or build script
-    for left_out in ("dev_server.py", "desktop.py", "build_site.py", "test"):
+    assert python == {f"engine/{name}" for name in manifest["python"]}  # no dev server or build script
+    for left_out in ("dev_server.py", "build_site.py", "test"):
         assert not (out / left_out).exists(), left_out
     assert not any("__pycache__" in p.parts or "node_modules" in p.parts for p in out.rglob("*"))
 

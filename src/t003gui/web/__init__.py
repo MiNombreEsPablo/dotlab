@@ -1,1 +1,1 @@
-"""The web UI (HTML/JS), its dev server, the static-site build and the desktop shell. The page files ship as package data."""
+"""The web UI (HTML/JS), its dev server, and the static-site build. The page files ship as package data."""

@@ -1,7 +1,6 @@
 """The label engine behind one small, client-neutral surface: a label as JSON in, pixels or TSPL out.
 
-Every client drives the engine through this: the web build calls it from JavaScript (Pyodide), and a future
-desktop shell could do the same. It needs no Qt and no USB, only what `render` and `protocol` need, and it takes and
+Every client drives the engine through this: the web build calls it from JavaScript (Pyodide). It needs no USB, only what `render` and `protocol` need, and it takes and
 returns plain data (strings, bytes, JSON), so the caller never touches Pillow or `LabelSpec` objects.
 
 A picture is referenced by path (`image_path`); the caller makes the file exist wherever the engine runs (the web

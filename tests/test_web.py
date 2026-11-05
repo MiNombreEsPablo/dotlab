@@ -28,7 +28,7 @@ def test_the_browser_engine_imports_only_the_modules_it_downloads():
     shipped = {name[:-3] for name in _dev_server().ENGINE_MODULES}
     others = sorted(p.stem for p in PACKAGE.glob("*.py"))
     blocked = [f"t003gui.{stem}" for stem in others if stem not in shipped]
-    assert "t003gui.core" in blocked and "t003gui.bridge" in blocked  # the test is only as good as this list
+    assert "t003gui.core" in blocked and "t003gui.cli" in blocked  # the test is only as good as this list
     code = (
         "import sys\n"
         + "".join(f"sys.modules[{name!r}] = None\n" for name in blocked)
@@ -65,9 +65,9 @@ def test_the_server_serves_the_page_the_engine_and_fonts_but_not_arbitrary_files
         assert get("/engine/api.py")[0] == 200 and get("/engine/core.py")[0] == 404  # only the shipped modules
         assert get("/fonts/DejaVuSans.ttf")[0] == 200 and get("/fonts/nope.ttf")[0] == 404
         assert get("/engine/manifest.json")[1] == "application/json"
-        assert get("/files/browser.js")[0] == 200 and get("/files/bridge.js")[0] == 200
+        assert get("/files/browser.js")[0] == 200
         assert get("/licenses.txt")[0] == 200 and b"SIL OPEN FONT LICENSE" in get("/licenses.txt")[2].upper()
-        assert get("/presets/local.js")[0] == 200 and get("/presets/bridge.js")[0] == 200
+        assert get("/presets/local.js")[0] == 200
         assert get("/assets/icon-mark.png")[0] == 200 and get("/assets/icon-mark.png")[1] == "image/png"
         assert get("/assets/icon-256.png")[0] == 404  # only what the page uses
         assert get("/dev_server.py")[0] == 404  # python in web/ is never served

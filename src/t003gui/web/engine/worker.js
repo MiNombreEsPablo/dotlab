@@ -1,4 +1,4 @@
-// The Python engine in the browser: Pyodide in a worker, driving the same t003gui.api the desktop uses.
+// The Python engine in the browser: Pyodide in a worker, driving t003gui.api.
 // Messages in: {id, method, args}; out: {id, result} or {id, error}; {progress} while loading.
 
 let py = null;

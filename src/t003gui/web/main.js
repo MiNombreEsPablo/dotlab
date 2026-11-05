@@ -1,10 +1,9 @@
 // The UI, written once. It only ever talks to three seams, whichever client it runs in:
-//   engine:  options(), preview(spec) -> {pixels, hints}                 (engine/pyodide.js or engine/bridge.js)
-//   printer: modes, print(spec, {mode, address}) -> {problems, error}    (printer/ble.js or printer/bridge.js)
-//   store:   get(key, fallback), set(key, value)                         (store/local.js or store/bridge.js)
-//   files:   save(bytes, name, mime, kind), copyImage(png)              (files/browser.js or files/bridge.js)
-//   presets: list(), get(name), save(name, label), delete(name)          (presets/local.js or presets/bridge.js)
-// The desktop shell opens this page with ?client=desktop; anywhere else it is the browser build.
+//   engine:  options(), preview(spec) -> {pixels, hints}                 (engine/pyodide.js)
+//   printer: modes, print(spec, {mode, address}) -> {problems, error}    (printer/ble.js)
+//   store:   get(key, fallback), set(key, value)                         (store/local.js)
+//   files:   save(bytes, name, mime, kind), copyImage(png)              (files/browser.js)
+//   presets: list(), get(name), save(name, label), delete(name)          (presets/local.js)
 // The label's simple controls are built from the description the engine provides (form.js).
 
 import { buildForm } from "./form.js";
@@ -13,7 +12,6 @@ import { createDoodleWidget } from "./doodle.js";
 import { createMenubar } from "./menus.js";
 import { applyTheme, DEFAULT_THEME, previewColors, THEMES } from "./themes.js";
 
-const desktop = new URLSearchParams(location.search).get("client") === "desktop";
 const $ = (id) => document.getElementById(id);
 const status = (text, isError = false) => {
   $("status").textContent = text;
@@ -21,18 +19,6 @@ const status = (text, isError = false) => {
 };
 
 async function connectSeams() {
-  if (desktop) {
-    const [engineModule, printerModule, storeModule, filesModule, presetsModule] = await Promise.all([
-      import("./engine/bridge.js"), import("./printer/bridge.js"), import("./store/bridge.js"), import("./files/bridge.js"),
-      import("./presets/bridge.js"),
-    ]);
-    const engine = engineModule.createEngine();
-    await engine.init();
-    return {
-      engine, store: storeModule.createStore(), files: filesModule.createFiles(), presets: presetsModule.createPresets(),
-      makePrinter: () => printerModule.createPrinter(),
-    };
-  }
   const [engineModule, printerModule, storeModule, filesModule, presetsModule] = await Promise.all([
     import("./engine/pyodide.js"), import("./printer/ble.js"), import("./store/local.js"), import("./files/browser.js"),
     import("./presets/local.js"),
@@ -158,7 +144,7 @@ async function main() {
   if (printer.modes.includes(saved.mode)) $("mode").value = saved.mode;
   $("address").value = saved.address || "";
   const syncPrinterRow = () => {
-    $("address").hidden = $("mode").value !== "Bluetooth" || printer.modes.length < 2; // only the desktop has an address box
+    $("address").hidden = $("mode").value !== "Bluetooth" || printer.modes.length < 2;
   };
   syncPrinterRow();
   $("printer-row").hidden = printer.modes.length < 2;
@@ -360,7 +346,6 @@ async function main() {
     $("about-title").textContent = `${app.name} ${app.version}`;
     $("about-details").textContent = `Includes ${app.fonts} bundled open-source font families (SIL Open Font License).`;
     $("about-repo").href = app.repo_url;
-    $("about-licenses").hidden = desktop; // (the shell's window can't open a page of its own; the repository has the same texts)
     $("about").showModal();
   }
   $("about-repo").addEventListener("click", (event) => {
@@ -400,8 +385,8 @@ async function main() {
   ]);
   status("");
   await refresh();
-  // For tests and the desktop checks: the label as the page sees it, and whether it is idle.
-  window.__t003 = { client: desktop ? "desktop" : "web", spec, form, refresh, idle: () => !rendering, pixels: () => last };
+  // For tests: the label as the page sees it, and whether it is idle.
+  window.__t003 = { client: "web", spec, form, refresh, idle: () => !rendering, pixels: () => last };
 }
 
 function fill(select, values) {
