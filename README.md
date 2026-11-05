@@ -118,6 +118,7 @@ work to build and to keep working).
 - [ ] `polish` A keyboard-shortcuts window (Ctrl+?)
 
 **Needs hardware or research first**
+- [ ] `research` Other label sizes and continuous paper: a plain roll prints, but the printer then shows "Label error" and ignores further jobs until restarted (see AGENTS.md); needs a new idea before any size option
 - [ ] `research` Printing from iOS through a Web Bluetooth browser such as Bluefy
 - [ ] `research` Check Bluetooth serial on Windows and macOS Chrome (Web Bluetooth should work there too)
 - [ ] `research` Other cheap Bluetooth thermal printers (the page's printer code is mostly TSPL plus a few UUIDs)
