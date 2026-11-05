@@ -55,7 +55,7 @@ def test_a_saved_label_that_is_only_a_doodle_prints(tmp_path, monkeypatch):
     path = tmp_path / "scribble.t003label"
     composition.save(path, core.LabelSpec(doodle=doodle.encode(ink)))
     sent = []
-    monkeypatch.setattr(core, "print_label", lambda spec, bluetooth=None: sent.append(spec) or [])
+    monkeypatch.setattr(core, "print_label", lambda spec, address='auto': sent.append(spec) or [])
     cli.main(["--file", str(path)])
     assert len(sent) == 1 and sent[0].doodle
 

@@ -23,8 +23,8 @@ def test_manifest_lists_real_files():
 
 
 def test_the_browser_engine_imports_only_the_modules_it_downloads():
-    """The browser fetches exactly `ENGINE_MODULES`. If `api` ever imports another module of the package (core, which
-    needs USB, or anything else) the browser build breaks, so block every module that is not on the list."""
+    """The browser fetches exactly `ENGINE_MODULES`. If `api` ever imports another module of the package (core, cli or
+    anything else) the browser build breaks, so block every module that is not on the list."""
     shipped = {name[:-3] for name in _dev_server().ENGINE_MODULES}
     others = sorted(p.stem for p in PACKAGE.glob("*.py"))
     blocked = [f"t003gui.{stem}" for stem in others if stem not in shipped]
@@ -32,8 +32,7 @@ def test_the_browser_engine_imports_only_the_modules_it_downloads():
     code = (
         "import sys\n"
         + "".join(f"sys.modules[{name!r}] = None\n" for name in blocked)
-        + "sys.modules['usb'] = sys.modules['libusb_package'] = None\n"
-        "from t003gui import api\n"
+        + "from t003gui import api\n"
         "assert api.tspl_bytes({'text': 'x'}).startswith(b'SIZE ')\n"
         "assert len(api.preview_pixels({'text': 'x'})) > 0 and api.options()\n"
         "print('ok')\n"

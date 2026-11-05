@@ -1,3 +1,0 @@
-# Let the logged-in user talk to the ORGBRO T003 label printer without root.
-# Install:  sudo cp 70-t003-label-printer.rules /etc/udev/rules.d/ && sudo udevadm control --reload && replug the printer
-SUBSYSTEM=="usb", ATTR{idVendor}=="0483", ATTR{idProduct}=="5743", TAG+="uaccess", MODE="0660", GROUP="lp"

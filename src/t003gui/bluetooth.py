@@ -9,7 +9,7 @@ The T003 is dual-mode and takes the same TSPL (protocol.py) over both transports
 
 `print_to` picks the transport for the system.
 
-No Qt and no USB in here. Pairing is not needed (RFCOMM connects to an unpaired printer, verified on Linux); the
+No window toolkit in here. Pairing is not needed (RFCOMM connects to an unpaired printer, verified on Linux); the
 printer only has to be switched on, in range and not held by a phone.
 """
 from __future__ import annotations
@@ -108,7 +108,7 @@ def print_to(payload: bytes, target: str) -> list[str]:
 
 def _connect(address: str, channel: int):
     if not (hasattr(socket, "AF_BLUETOOTH") and hasattr(socket, "BTPROTO_RFCOMM")):
-        raise PrinterError("This Python has no Bluetooth sockets (Linux does; macOS doesn't): print over USB instead.")
+        raise PrinterError("This Python has no Bluetooth sockets (Linux does; macOS doesn't): use the web page (Chrome or Edge) instead.")
     sock = socket.socket(socket.AF_BLUETOOTH, socket.SOCK_STREAM, socket.BTPROTO_RFCOMM)
     sock.settimeout(10)
     try:
