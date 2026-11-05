@@ -58,28 +58,11 @@ seconds (fonts load as you use them), and nothing you make leaves your device.
   page). *Save image* writes a plain PNG at printed size or enlarged 4×; *Copy image* puts it on the clipboard.
 - Looks: Y2K candy plastic in blue or pink, gunmetal with LCD-green text, a four-shade olive "handheld" look, or the plain
   system look.
-- A command-line tool with the same label options.
-
-## The command line (Linux, or anything with Python 3.9+)
-
-```bash
-pipx install "git+https://github.com/MiNombreEsPablo/dotlab"      # or: uv tool install … / pip install …
-dotlab-print "NEON\nNIGHTS" --effect neon --frame brackets         # prints over Bluetooth
-dotlab-print "Hi" --preview hi.png                                 # render to a PNG, don't print
-dotlab-print --file my-label.png                                   # print a label saved from the web page
-dotlab-print --help
-```
-
-On **Linux** it prints over classic Bluetooth (RFCOMM, through BlueZ): the printer must be on and not connected to a
-phone, and it doesn't need pairing. With no `--address` it uses the first T003 `bluetoothctl` knows about (it scans for
-about 5 seconds if the system hasn't seen the printer yet). On **Windows and macOS** it uses Bluetooth LE through
-[bleak](https://github.com/hbldh/bleak); that path has only been tested against a fake bleak, never real hardware, so
-please report problems.
 
 ## How it works
 
 The T003 speaks TSPL. Dotlab renders a 384×224 dot label (58 mm paper, 203 dpi, 28 mm stickers), turns it into a TSPL
-bitmap and sends it over Bluetooth: Web Bluetooth (GATT) from the page, RFCOMM or bleak from the command line. See
+bitmap and sends it over Bluetooth: Web Bluetooth (GATT) or Web Serial (RFCOMM) from the page. See
 [AGENTS.md](AGENTS.md) for the hardware facts and the code layout.
 
 ## From source
@@ -87,7 +70,6 @@ bitmap and sends it over Bluetooth: Web Bluetooth (GATT) from the page, RFCOMM o
 ```bash
 python -m venv .venv && .venv/bin/pip install -e '.[dev]'   # [dev] = pytest
 python src/dotlab/web/dev_server.py                          # the page at http://localhost:8000 (Web Bluetooth needs localhost or https)
-.venv/bin/dotlab-print --help                                # the CLI
 .venv/bin/pytest                                             # tests, no printer needed
 ```
 

@@ -23,12 +23,11 @@ def test_manifest_lists_real_files():
 
 
 def test_the_browser_engine_imports_only_the_modules_it_downloads():
-    """The browser fetches exactly `ENGINE_MODULES`. If `api` ever imports another module of the package (core, cli or
-    anything else) the browser build breaks, so block every module that is not on the list."""
+    """The browser fetches exactly `ENGINE_MODULES`. If `api` ever imports another module of the package (core or anything else) the browser build breaks, so block every module that is not on the list."""
     shipped = {name[:-3] for name in _dev_server().ENGINE_MODULES}
     others = sorted(p.stem for p in PACKAGE.glob("*.py"))
     blocked = [f"dotlab.{stem}" for stem in others if stem not in shipped]
-    assert "dotlab.core" in blocked and "dotlab.cli" in blocked  # the test is only as good as this list
+    assert "dotlab.core" in blocked  # the test is only as good as this list
     code = (
         "import sys\n"
         + "".join(f"sys.modules[{name!r}] = None\n" for name in blocked)
