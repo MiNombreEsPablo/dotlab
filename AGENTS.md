@@ -22,10 +22,10 @@ purpose. Put creative effort into the *labels* (effects, stickers, frames, fonts
 
 ## Compatibility (keep these true)
 
-- **Python 3.9+.** No 3.10-only syntax in `src` (`from __future__ import annotations` everywhere; no `match`, no `zip(strict=)`, no `tomllib` in code or tests). CI runs the oldest (3.9) and newest (3.13) Python plus an oldest-libraries job on 3.10; the versions in between are not tested individually.
+- **Python 3.9+.** No 3.10-only syntax in `src` (`from __future__ import annotations` everywhere; no `match`, no `zip(strict=)`, no `tomllib` in code or tests). CI runs the oldest (3.9, with the oldest libraries) and newest (3.13) Python on Linux only; the versions in between and other operating systems are not tested.
 - **The core is window-free.** `core`, `render`, `imaging`, `composition`, `presets`, `cli`, `api`, `protocol` never import a window toolkit; `pip install .` (no extra) is a working CLI. `tests/test_packaging.py` runs the CLI with only the core dependencies.
-- **Lower bounds are tested**: CI's `minimum-versions` job installs Pillow 9.1.0, qrcode 7.4, fontTools 4.30. Raise a bound in `pyproject.toml` only together with that job.
-- **A wheel needs every data file in `package-data`** (fonts, licences, `assets/*`); an editable install hides a missing one. `test_package_data_covers_every_asset_and_font` and CI's `package` job (build wheel, install it clean, run `--selftest`) guard this.
+- **Lower bounds are tested**: CI's Python 3.9 job installs Pillow 9.1.0, qrcode 7.4, fontTools 4.30. Raise a bound in `pyproject.toml` only together with that job.
+- **A wheel needs every data file in `package-data`** (fonts, licences, `assets/*`); an editable install hides a missing one. `test_package_data_covers_every_asset_and_font` guards this.
 
 
 ## Layout
