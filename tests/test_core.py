@@ -83,10 +83,6 @@ def test_version_is_single_sourced():
     assert 'version = {attr = "t003gui.__version__"}' in text
 
 
-def test_printer_presence_never_raises():
-    assert isinstance(core.printer_presence(), str)
-
-
 def test_label_bitmap_is_the_sticker_only_and_export_uses_it(tmp_path):
     spec = core.LabelSpec(text="Hi")
     one, four = core.label_bitmap(spec), core.label_bitmap(spec, scale=4)

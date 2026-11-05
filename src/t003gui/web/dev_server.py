@@ -21,7 +21,7 @@ WEB = Path(__file__).resolve().parent
 PACKAGE = WEB.parent  # src/t003gui: the web UI lives inside the package, so every install ships it
 FONTS = PACKAGE / "fonts"
 
-# api and what it imports, no more: the browser must not need Qt, USB or anything else
+# api and what it imports, no more: the browser must not need USB or anything else
 ENGINE_MODULES = ["__init__.py", "spec.py", "render.py", "imaging.py", "doodle.py", "stickers.py", "fonts.py",
                   "protocol.py", "bluetooth.py", "form.py", "composition.py", "presets.py", "about.py", "api.py"]
 ASSETS = PACKAGE / "assets"

@@ -168,37 +168,34 @@ def test_scan_runs_bluetoothctl_with_a_timeout_and_never_raises(monkeypatch):
     bluetooth.scan()  # no bluetoothctl: silently nothing
 
 
-def test_print_label_uses_usb_unless_given_a_bluetooth_target(monkeypatch):
+def test_print_label_goes_to_the_given_address_or_the_first_known_printer(monkeypatch):
     monkeypatch.setattr(bluetooth.sys, "platform", "linux")  # RFCOMM; Windows and macOS print over BLE (test_ble.py)
     calls = []
-    monkeypatch.setattr(core, "send", lambda payload: calls.append(("usb", payload)) or [])
-    monkeypatch.setattr(core.bt, "send", lambda payload, address: calls.append(("bt", payload, address)) or ["head open"])
+    monkeypatch.setattr(core.bt, "send", lambda payload, address: calls.append((payload, address)) or ["head open"])
     monkeypatch.setattr(bluetooth, "known_printers", lambda: [(ADDRESS, "T003-7A36")])
     spec = core.LabelSpec(text="x")
-    assert core.print_label(spec) == []
-    assert core.print_label(spec, bluetooth=ADDRESS.lower()) == ["head open"]
-    assert core.print_label(spec, bluetooth="") == ["head open"]  # "" = the first known T003
-    assert [c[0] for c in calls] == ["usb", "bt", "bt"]
-    assert calls[0][1] == calls[1][1] == core.tspl(spec)  # the same payload on either transport
-    assert calls[1][2] == calls[2][2] == ADDRESS
+    assert core.print_label(spec, ADDRESS.lower()) == ["head open"]
+    assert core.print_label(spec, "") == ["head open"]  # "" = the first known T003
+    assert core.print_label(spec) == ["head open"]  # the default is the same
+    assert [c[1] for c in calls] == [ADDRESS] * 3
+    assert all(c[0] == core.tspl(spec) for c in calls)
 
 
 def test_cli_bluetooth_flag(monkeypatch):
     seen = []
-    monkeypatch.setattr(core, "print_label", lambda spec, bluetooth=None: seen.append(bluetooth) or [])
+    monkeypatch.setattr(core, "print_label", lambda spec, address="auto": seen.append(address) or [])
     cli.main(["hello"])
-    cli.main(["hello", "--bluetooth", ADDRESS])
-    cli.main(["--bluetooth", "--", "hello"])  # no value: the first known printer
-    assert seen == [None, ADDRESS, "auto"]
+    cli.main(["hello", "--address", ADDRESS])
+    assert seen == ["auto", ADDRESS]
 
 
 def test_cli_reports_a_bluetooth_failure_as_an_error(monkeypatch):
-    def refuse(spec, bluetooth=None):
+    def refuse(spec, address="auto"):
         raise core.PrinterError("Can't reach the printer over Bluetooth")
 
     monkeypatch.setattr(core, "print_label", refuse)
     with pytest.raises(SystemExit) as e:
-        cli.main(["hello", "--bluetooth", ADDRESS])
+        cli.main(["hello", "--address", ADDRESS])
     assert "Can't reach the printer" in str(e.value)
 
 

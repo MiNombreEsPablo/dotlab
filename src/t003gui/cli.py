@@ -64,8 +64,8 @@ def main(argv: list[str] | None = None) -> None:
     p.add_argument("--density", type=int, help="darkness 0-15 (default 7)")
     p.add_argument("--preset", help="start from a preset saved in the GUI; other flags override it")
     p.add_argument("--file", metavar="FILE", help="start from a saved composition (.t003label); other flags override it")
-    p.add_argument("--bluetooth", nargs="?", const="auto", metavar="ADDRESS",
-                   help="print over Bluetooth instead of USB, to this address or (no value) the first T003 the system knows")
+    p.add_argument("--address", default="auto", metavar="ADDRESS",
+                   help="Bluetooth address of the printer (default: the first T003 the system knows)")
     p.add_argument("--preview", metavar="PNG", help="write the rendered label to PNG instead of printing")
     args = p.parse_args(argv)
 
@@ -103,7 +103,7 @@ def main(argv: list[str] | None = None) -> None:
         if args.preview:
             core.to_bitmap(core.render(spec)).save(args.preview)
             return
-        for problem in core.print_label(spec, bluetooth=args.bluetooth):
+        for problem in core.print_label(spec, args.address):
             print(f"printer: {problem}", file=sys.stderr)
     except (core.PrinterError, OSError, ValueError) as e:  # ValueError: e.g. a QR code too big to encode
         sys.exit(f"error: {e}")

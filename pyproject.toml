@@ -5,19 +5,14 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "t003-label-gui"
 dynamic = ["version"]
-description = "Desktop GUI for printing to the ORGBRO T003 thermal label printer over raw USB (TSPL)"
+description = "Label designer (web app and CLI) for printing to the ORGBRO T003 thermal label printer over Bluetooth (TSPL)"
 requires-python = ">=3.9"
 # The core and the CLI need no window toolkit, so they install anywhere Python runs; the window is the optional "web" extra.
 dependencies = [
     "pillow>=9.1",
-    "pyusb>=1.2.1",
     "qrcode>=7.4",
     "fonttools>=4.30",
     "bleak>=0.22; sys_platform != 'linux'",  # Bluetooth (BLE) printing on Windows and macOS; Linux uses RFCOMM sockets
-    # Bundles libusb for Windows, macOS and Linux x86-64/arm64. Elsewhere pip would try to build it from source, which
-    # fails; there the code falls back to the system libusb (apt/dnf/pkg install libusb). Not older than 1.0.30:
-    # every 1.0.26.x library is rejected by pyusb on a machine with no system libusb (found with a CI probe).
-    "libusb-package>=1.0.30; platform_system == 'Windows' or platform_system == 'Darwin' or (platform_system == 'Linux' and (platform_machine == 'x86_64' or platform_machine == 'aarch64' or platform_machine == 'AMD64'))",
 ]
 
 [project.optional-dependencies]

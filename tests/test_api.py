@@ -88,17 +88,6 @@ def test_text_layout_is_pinned_to_basic():
     assert render._font(path, 24).layout_engine == ImageFont.Layout.BASIC
 
 
-def test_api_and_protocol_import_without_usb():
-    code = (
-        "import sys; sys.modules['usb'] = None; sys.modules['libusb_package'] = None\n"
-        "from t003gui import api, protocol\n"
-        "assert api.tspl_bytes({'text': 'x'}).startswith(b'SIZE ')\n"
-        "print('ok')\n"
-    )
-    result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, cwd=ROOT, timeout=60)
-    assert result.returncode == 0 and "ok" in result.stdout, result.stderr
-
-
 def test_fonts_needed_covers_every_font_a_render_opens(monkeypatch):
     """A client that loads fonts on demand (the web build) gets exactly `fonts_needed`; a font opened that is not on
     the list would silently fall back to another face there. Record what rendering really opens, for every effect,

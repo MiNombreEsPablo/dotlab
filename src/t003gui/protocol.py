@@ -1,6 +1,6 @@
 """The TSPL payload and the printer's status codes, shared by every client.
 
-No USB and no Qt in here: the desktop app and CLI send these bytes over USB (core.py), and the web build sends the
+No transport and no window toolkit in here: the CLI sends these bytes over RFCOMM (bluetooth.py), and the web build sends the
 same bytes over Bluetooth, so the payload is built in exactly one place.
 """
 from __future__ import annotations
@@ -29,6 +29,6 @@ def status_problems(status: int) -> list[str]:
 
 
 def chunks(data: bytes, size: int) -> Iterator[bytes]:
-    """`data` in pieces of at most `size` bytes: every transport writes the payload in parts (USB 4096, Bluetooth less)."""
+    """`data` in pieces of at most `size` bytes: every transport writes the payload in parts (Bluetooth sends small ones)."""
     for i in range(0, len(data), size):
         yield data[i : i + size]

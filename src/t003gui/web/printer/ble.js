@@ -94,7 +94,7 @@ export function createPrinter(engine, options) {
     }
   }
 
-  // The printer's status byte, or null when it doesn't answer (like core.send, that is not an error).
+  // The printer's status byte, or null when it doesn't answer (that is not an error).
   async function status() {
     const reply = new Promise((resolve) => {
       onStatus = resolve;
