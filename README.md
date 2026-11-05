@@ -53,6 +53,7 @@ seconds (fonts load as you use them), and nothing you make leaves your device. A
   (Bayer) crosshatch or hard-cutoff dithering; brightness, contrast, gamma, pixelate, mirror, flip and invert.
   Transparent PNGs print on white and phone photos keep their orientation.
 - **Doodle:** freehand ink on the label with brushes, spray, shapes, fill and 24×24 stickers.
+- **Remembers your work:** the label you were designing is back when you reopen the page (its picture isn't kept: *Save label* keeps pictures). *File → New label* starts over.
 - **Save and share:** *Save label* writes the label as a normal 1-bit **PNG** with the whole design stored inside it. Any
   image viewer or editor opens it as a picture; Dotlab opens it again for editing (*Open label*, or drop it on the
   page). *Save image* writes a plain PNG at printed size or enlarged 4×; *Copy image* puts it on the clipboard.
@@ -84,7 +85,7 @@ work to build and to keep working).
 
 **Next**
 - [ ] `research` Check Print from Chrome/Edge on real Windows and macOS machines, and fix what turns up. Testers wanted.
-- [ ] `useful` New label (Ctrl+N), Open Recent, and the last label restored when the page opens
+- [ ] `useful` Open Recent (the page already remembers the label you were on, minus its picture)
 - [ ] `fun` More stickers (the Doodle tab has 12 so far), and a sticker that can be moved or resized after it is placed
 - [ ] `fun` Poster mode: split one large image across several stickers, with alignment marks
 

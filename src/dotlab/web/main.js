@@ -47,6 +47,21 @@ async function main() {
   let rendering = false;
   let again = false;
   let last = null;
+  // The label being designed is remembered between visits, so a reload or a closed tab loses nothing. Its picture is not
+  // (it lives in the engine's memory, not in storage): the page says so when it restores a label that had one.
+  let saveTimer = null;
+  const rememberNow = () => {
+    clearTimeout(saveTimer);
+    saveTimer = null; // nothing pending any more
+    const current = spec();
+    store.set("label", { spec: { ...current, image_path: "" }, hadPicture: !!current.image_path });
+  };
+  const remember = () => {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(rememberNow, 500);
+  };
+  addEventListener("pagehide", () => { if (saveTimer) rememberNow(); });
+
   async function refresh() {
     if (rendering) {
       again = true;
@@ -60,6 +75,7 @@ async function main() {
         // needs the label alone to know where the text is
         const { pixels, hints } = await engine.preview(activeTab === "doodle" ? { ...spec(), doodle: "" } : spec());
         draw(pixels);
+        remember();
         if (activeTab === "doodle") doodle.setUnderlay(pixels);
         $("hint").textContent = hints.join(" ");
         $("hint").hidden = hints.length === 0;
@@ -95,7 +111,10 @@ async function main() {
   let activeTab = "";
   const form = buildForm(options.form, options.defaults, (field) => {
     if (field.tab === "output") return; // copies and darkness don't change the picture
-    if (field.name === "doodle" && activeTab === "doodle") return; // the overlay already shows what was drawn
+    if (field.name === "doodle" && activeTab === "doodle") { // the overlay already shows what was drawn
+      remember();
+      return;
+    }
     refresh();
   }, { image: picture.make, doodle: doodle.make }, (id) => {
     const wasDrawing = activeTab === "doodle";
@@ -331,6 +350,15 @@ async function main() {
   $("print").addEventListener("click", print);
   $("print").disabled = false;
 
+  async function newLabel() {
+    if (hasContent(spec()) && !confirm("Start a new label? The current one is replaced: use Save label first to keep it.")) return;
+    form.write({}); // every control back to its default, the picture and the doodle included
+    $("preset").value = "";
+    resetDelete();
+    await refresh();
+    status("New label.");
+  }
+
   // the menu bar: every item calls an action the buttons already use
   async function clearImage() {
     picture.current().set("");
@@ -357,6 +385,7 @@ async function main() {
   }
   createMenubar($("menubar"), [
     { label: "File", items: [
+      { label: "New label", run: newLabel },  // (no shortcut: browsers keep Ctrl+N for a new window)
       { label: "Open label…", shortcut: "Ctrl+O", run: () => $("label-file").click() },
       { label: "Save label…", shortcut: "Ctrl+S", run: saveLabel },
       "-",
@@ -380,6 +409,13 @@ async function main() {
     ] },
   ]);
   status("");
+  const kept = await store.get("label", null);
+  if (kept && kept.spec) {
+    try {
+      form.write(kept.spec);
+      if (kept.hadPicture) status("Restored your last label. Its picture isn't kept: add it again, or use Save label, which keeps pictures.");
+    } catch (_) { /* a label from an older version that doesn't fit: start fresh */ }
+  }
   await refresh();
   // For tests: the label as the page sees it, and whether it is idle.
   window.__dotlab = { client: "web", engine, spec, form, refresh, idle: () => !rendering, pixels: () => last };
