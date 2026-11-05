@@ -100,10 +100,14 @@
   --r-tab: 12px;
   --r-title: 10px;
   --r-bezel: 18px;
+  --glow: 0 0 22px rgba(30, 160, 240, .45); /* a halo round the preview */
+  --dock-shadow: 0 -4px 10px rgba(11, 42, 99, .12); /* under the Print dock */
+  --power-on: power-on .55s ease-out; /* the screen waking up */
 }
 
 /* ---- Y2K Pink: the same plastic in bubblegum (colours only) ---------------------------------------------------------- */
 :root[data-theme="y2k-pink"] {
+  --glow: 0 0 22px rgba(255, 90, 190, .45);
   --text: #5a0f3d;
   --raised: #c2468f;
   --inset: #c2468f;
@@ -233,6 +237,9 @@
   --r-tab: 3px;
   --r-title: 2px;
   --r-bezel: 4px;
+  --glow: 0 0 22px rgba(80, 255, 140, .25); /* a halo round the preview */
+  --dock-shadow: 0 -4px 10px rgba(0, 0, 0, .35); /* under the Print dock */
+  --power-on: power-on .55s ease-out; /* the screen waking up */
 }
 
 /* ---- Handheld: a 90s handheld's four shades of olive green, nothing else -------------------------------------------- */
@@ -326,6 +333,9 @@
   --r-tab: 0;
   --r-title: 0;
   --r-bezel: 10px;
+  --glow: none; /* a halo round the preview */
+  --dock-shadow: none; /* under the Print dock */
+  --power-on: none; /* the screen waking up */
 }
 
 /* ---- Plain: no custom look; flat and light, the same on every system (it deliberately ignores the OS dark mode) ------- */
@@ -415,4 +425,7 @@
   --r-tab: 6px;
   --r-title: 6px;
   --r-bezel: 8px;
+  --glow: none; /* a halo round the preview */
+  --dock-shadow: none; /* under the Print dock */
+  --power-on: none; /* the screen waking up */
 }

@@ -73,15 +73,27 @@ body {
 /* the preview: a bezel around a screen, the gap between stickers captioned underneath */
 .bezel {
   padding: 10px;
+  box-shadow: var(--glow);
   background: var(--bezel);
   border: 3px solid var(--bezel-border);
   border-radius: var(--r-bezel);
 }
 .screen {
+  animation: var(--power-on);
   overflow: hidden;
   background: var(--screen);
   border: 3px solid var(--screen-border);
   border-radius: 6px;
+}
+.empty { /* said once, over the blank sticker; the doodle tab and any content hide it */
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  margin: 0;
+  color: var(--gap-text);
+  text-align: center;
+  pointer-events: none;
 }
 .screen canvas {
   display: block;
@@ -218,9 +230,13 @@ fieldset.output legend {
   position: sticky;
   bottom: 0;
   z-index: 2;
-  margin: 12px -12px 0;
-  padding: 14px 12px 8px;
-  background: linear-gradient(transparent, var(--window-bottom) 28%); /* fades into the window's bottom colour */
+  margin: 12px 0 0;
+  padding: 10px 12px 8px;
+  background: var(--panel); /* a solid dock: a fade would show as a block against the window's own gradient */
+  border: 2px solid;
+  border-color: var(--raised);
+  border-radius: var(--r-pane);
+  box-shadow: var(--dock-shadow);
 }
 
 @media (max-height: 520px) { .actions { position: static; background: none; } } /* a very short window: don't cover the controls */
@@ -245,6 +261,7 @@ fieldset.output legend {
 #print:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
 #status { min-height: 1.4em; margin: 6px 2px 0; color: var(--status); font-weight: bold; }
+#status:empty { display: none; }
 #status.error { color: var(--error); }
 #status.error::before { content: "⚠ "; } /* an error is never told apart by colour alone */
 
@@ -310,7 +327,8 @@ body.dropping .bezel { outline: 3px dashed var(--focus); outline-offset: 4px; }
 
 /* saving and copying the label as an image, under the preview */
 .stage-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
-.stage-tools select { flex: 1 1 11rem; width: auto; min-width: 0; }
+.stage-tools .spacer { flex: 1 1 0; }
+.stage-tools select { flex: 0 1 15rem; width: auto; min-width: 0; }
 .stage-tools .gel { flex: none; }
 
 /* the menu bar: File, Edit, View, Help */
@@ -384,3 +402,7 @@ body.dropping .bezel { outline: 3px dashed var(--focus); outline-offset: 4px; }
 #about h2 { margin: 0 0 8px; font-size: 1.15rem; }
 #about a { color: var(--text); }
 #about form { margin: 12px 0 0; text-align: right; }
+
+/* the screen powers on once when the page opens (a token: the Plain look has none) */
+@keyframes power-on { from { filter: brightness(2.2) contrast(.6); opacity: .25; } 60% { filter: brightness(1.3); opacity: 1; } to { filter: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .screen { animation: none; } }

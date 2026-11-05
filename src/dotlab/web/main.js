@@ -79,6 +79,7 @@ async function main() {
         if (activeTab === "doodle") doodle.setUnderlay(pixels);
         $("hint").textContent = hints.join(" ");
         $("hint").hidden = hints.length === 0;
+        $("empty").hidden = activeTab === "doodle" || hasContent(spec()) || !!spec().doodle;
       } while (again);
       if ($("status").classList.contains("error")) status("");
     } catch (e) {
@@ -203,7 +204,7 @@ async function main() {
       const image = await makeImage("copy");
       if (!image) return;
       await files.copyImage(image.data);
-      status("Copied the label to the clipboard.");
+      status("Copied. Paste it anywhere.");
     } catch (e) {
       status(`Couldn't copy the image: ${e.message}`, true);
     }
@@ -333,7 +334,7 @@ async function main() {
     const result = await printer.print(current, { mode: $("mode").value });
     $("print").disabled = false;
     if (result.error) status(result.error, true);
-    else status(result.problems.length ? `Printer: ${result.problems.join(", ")}` : "Sent.");
+    else status(result.problems.length ? `Printer: ${result.problems.join(", ")}` : "Sent. Your sticker is on its way.");
   }
   $("print").addEventListener("click", print);
   $("print").disabled = false;

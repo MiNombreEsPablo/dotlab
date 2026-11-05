@@ -58,18 +58,17 @@
   <section class="stage" aria-label="Preview">
     <div class="bezel">
       <div class="screen">
-        <div class="paper"><canvas id="preview" width="384" height="224" aria-label="Label preview"></canvas></div>
+        <div class="paper"><canvas id="preview" width="384" height="224" aria-label="Label preview"></canvas><p id="empty" class="empty">Your label shows up here.<br>Type some text to begin.</p></div>
         <div class="gap" aria-hidden="true">gap between stickers, not printed</div>
       </div>
     </div>
     <p id="hint" role="note" hidden></p>
     <div class="stage-tools">
+      <button type="button" id="open-label" class="gel">Open…</button>
+      <button type="button" id="save-label" class="gel">Save…</button>
+      <span class="spacer"></span>
       <select id="export-size" aria-label="Copied image size"></select>
       <button type="button" id="copy-image" class="gel">Copy image</button>
-    </div>
-    <div class="stage-tools">
-      <button type="button" id="open-label" class="gel">Open label…</button>
-      <button type="button" id="save-label" class="gel">Save…</button>
       <input type="file" id="label-file" accept=".png,image/png" hidden>
     </div>
   </section>
