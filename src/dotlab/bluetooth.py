@@ -36,6 +36,11 @@ BLE = {  # measured on the T003: TSPL written to `write` is answered with the st
     "chunk": 180,  # bytes per write: a whole label in ~0.6 s (20 bytes works too, but takes 16 s)
     "gap_ms": 5,
 }
+SERIAL = {  # classic Bluetooth serial (RFCOMM) from a browser (Web Serial): the Serial Port Profile service, and the pacing
+    "service": "00001101-0000-1000-8000-00805f9b34fb",
+    "chunk": RFCOMM_CHUNK,
+    "gap_ms": int(RFCOMM_GAP * 1000),
+}
 _ADDRESS = re.compile(r"[0-9A-F]{2}(:[0-9A-F]{2}){5}")
 
 

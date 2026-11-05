@@ -22,19 +22,19 @@ and pull requests are welcome.
 ## Where it works
 
 Printing is **Bluetooth only**, on purpose: it behaves the same everywhere, unlike USB, which needs a different driver
-story on every system. In the browser that means Web Bluetooth.
+story on every system. In the browser that means Web Bluetooth (BLE), or on desktop also Web Serial over classic Bluetooth, which is what Linux uses.
 
 | Device | Browser | Print from the page? |
 |---|---|---|
 | **Android** | Chrome or Edge | ✅ Works. Tested on a Pixel 7a with the real printer. |
-| **Windows** | Chrome or Edge | ❔ Should work (same Web Bluetooth). Not tested yet. |
+| **Windows** | Chrome or Edge | ❔ Should work (Web Bluetooth, or Bluetooth serial after pairing). Not tested yet. |
 | **macOS** | Chrome or Edge | ❔ Should work. Not tested yet. |
 | **ChromeOS** | Chrome | ❔ Should work. Not tested. |
-| **Linux** | Chrome, Chromium | ❌ BlueZ can't open this printer's Bluetooth LE link. Design in the page, print with the command line (below). |
+| **Linux** | Chrome, Chromium | ✅ Works, over Bluetooth serial. Pair the printer in your system's Bluetooth settings once; the browser then lists it. Tested with Chromium 156. |
 | **iPhone, iPad** | any | ❌ iOS has no Web Bluetooth in Safari or Chrome. A third-party Web Bluetooth browser (e.g. Bluefy) may work; untested. |
 | **Firefox, Safari** | any system | ❌ No Web Bluetooth. You can still design, and save the label as an image. |
 
-Designing works in every modern browser; only the Print button needs Web Bluetooth. The page runs the label engine
+Designing works in every modern browser; only the Print button needs Web Bluetooth or Web Serial. The page runs the label engine
 (Python, via [Pyodide](https://pyodide.org)) in your browser: the first visit downloads the engine and takes a few
 seconds (fonts load as you use them), and nothing you make leaves your device.
 
@@ -119,7 +119,7 @@ work to build and to keep working).
 
 **Needs hardware or research first**
 - [ ] `research` Printing from iOS through a Web Bluetooth browser such as Bluefy
-- [ ] `research` Linux in the browser: the BlueZ problem may go away with `ControllerMode = le` in `/etc/bluetooth/main.conf`
+- [ ] `research` Check Bluetooth serial on Windows and macOS Chrome (Web Bluetooth should work there too)
 - [ ] `research` Other cheap Bluetooth thermal printers (the page's printer code is mostly TSPL plus a few UUIDs)
 
 ## Licence

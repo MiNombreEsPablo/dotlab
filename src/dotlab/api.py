@@ -126,7 +126,8 @@ def options() -> str:
         "fonts": [
             {"family": f.family, "category": f.category, "japanese": f.ja, "files": f.files} for f in fonts.BUNDLED
         ],
-        "bluetooth": {"name_prefix": bluetooth.NAME_PREFIX, "ble": bluetooth.BLE, "status_query": list(STATUS_QUERY)},
+        "bluetooth": {"name_prefix": bluetooth.NAME_PREFIX, "ble": bluetooth.BLE, "serial": bluetooth.SERIAL,
+                      "status_query": list(STATUS_QUERY)},
         "form": form.describe(),
         "stickers": {  # each as 24 rows of "0"/"1" (1 = ink), for a client to draw and enlarge by whole numbers
             name: {"label": label, "rows": ["".join("1" if p else "0" for p in row) for row in _rows(name)]}

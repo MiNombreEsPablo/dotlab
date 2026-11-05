@@ -1,7 +1,7 @@
 // Printer seam, browser adapter: print over Web Bluetooth (Chrome/Edge/Opera on Android and desktop; not Safari, iOS
 // or Firefox). The UUIDs, chunk size and gap come from the engine's options (src/dotlab/bluetooth.py), so nothing about
 // the printer is repeated here.
-//   modes: string[]   print(spec, {mode, address}) -> {problems: string[], error: string|null}
+//   modes: string[]   print(spec) -> {problems: string[], error: string|null}
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -21,12 +21,9 @@ function webBluetoothHelp() {
   const ua = navigator.userAgent;
   if (!window.isSecureContext) return "Web Bluetooth needs a secure page (https).";
   if (/Firefox\//.test(ua) || (/Safari\//.test(ua) && !/Chrome\/|Chromium\//.test(ua))) {
-    return "This browser has no Web Bluetooth. Use Chrome or Edge (Android or desktop).";
+    return "This browser has no Web Bluetooth. Use Chrome or Edge.";
   }
-  if (/Linux/.test(ua) && !/Android/.test(ua)) {
-    return "Chrome and Edge on Linux keep Web Bluetooth switched off. Open chrome://flags/#enable-web-bluetooth (edge://flags on Edge), set it to Enabled, restart the browser and try again.";
-  }
-  return "Web Bluetooth is not available in this browser. Use a current Chrome or Edge (Android or desktop).";
+  return "Web Bluetooth is not available in this browser. Use a current Chrome or Edge.";
 }
 
 // Chromium on Linux reports a failed GATT connection (BlueZ) as "Unknown error when connecting to the device". It is
@@ -120,7 +117,7 @@ export function createPrinter(engine, options) {
   }
 
   return {
-    modes: ["Bluetooth"],
+    modes: ["Bluetooth LE"],
     print(spec) {
       const run = busy.then(() => printNow(spec)).catch((e) => ({
         problems: [],
