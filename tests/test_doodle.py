@@ -92,18 +92,6 @@ def test_describe_is_plain_json_and_complete():
     assert lo <= start <= hi == stickers.MAX_SCALE
 
 
-def test_the_vocabulary_matches_the_qt_canvas_for_now():
-    widgets = pytest.importorskip("t003gui.widgets")  # needs PySide6; goes away with the Qt UI
-    panels = pytest.importorskip("t003gui.panels")
-    canvas = widgets.DoodleCanvas
-    assert doodle.TOOLS == canvas.TOOLS and doodle.INKS == canvas.INKS
-    assert doodle.UNDO_LIMIT == canvas.UNDO_LIMIT and doodle.SPRAY_MS == canvas.SPRAY_MS
-    assert doodle.USES_INK == panels.DoodlePanel.USES_INK and doodle.USES_BRUSH == panels.DoodlePanel.USES_BRUSH
-    for value, label in doodle.LABELS.items():
-        if value in panels.LABELS:
-            assert label == panels.LABELS[value], value
-
-
 def test_stickers_reach_clients_as_bitmaps_that_match_the_masks():
     import json
 

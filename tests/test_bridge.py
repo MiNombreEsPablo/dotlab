@@ -61,12 +61,12 @@ def test_known_printers_are_plain_dicts(monkeypatch):
     assert Bridge().known_printers() == [{"address": "57:37:EB:A7:7A:36", "name": "T003-7A36"}]
 
 
-def test_the_bridge_needs_neither_qt_nor_pywebview():
+def test_the_bridge_needs_no_pywebview():
     import subprocess
     import sys
     from pathlib import Path
 
-    code = ("import sys; sys.modules['PySide6'] = None; sys.modules['webview'] = None\n"
+    code = ("import sys; sys.modules['webview'] = None\n"
             "from t003gui.bridge import Bridge; print(len(Bridge().preview('{}')['pixels']) > 0)")
     result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True,
                             cwd=Path(__file__).resolve().parent.parent, timeout=60)

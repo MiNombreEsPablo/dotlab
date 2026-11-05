@@ -46,12 +46,6 @@ def test_choices_follow_spec_so_a_new_effect_needs_no_ui_change():
     assert by_name["font"].choices[0][2]  # fonts come grouped by category
 
 
-def test_labels_match_the_qt_window_for_now():
-    panels = pytest.importorskip("t003gui.panels")  # needs PySide6
-    for value, label in form.LABELS.items():
-        assert panels.LABELS[value] == label
-
-
 def test_the_form_is_in_the_options_and_is_plain_json():
     options = json.loads(api.options())
     assert options["form"] == json.loads(json.dumps(form.describe()))
@@ -77,14 +71,6 @@ def test_the_image_tab_waits_for_a_picture_and_resets_only_its_own_fields():
 def test_the_picture_chooser_is_placed_by_the_schema_and_drawn_by_the_client():
     chooser = next(f for f in form.FIELDS if f.kind == "image")
     assert chooser.name == "image_path" and chooser.tab == "content"
-
-
-def test_every_choice_has_the_wording_the_qt_window_uses():
-    panels = pytest.importorskip("t003gui.panels")
-    for f in form.FIELDS:
-        for value, label, _group in f.choices:
-            if value in panels.LABELS:
-                assert label == panels.LABELS[value], value
 
 
 def test_the_doodle_is_the_last_control_to_get_a_place_in_the_schema():

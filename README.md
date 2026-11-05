@@ -14,23 +14,6 @@ who likes the same corner of the internet. It aims to stay small and playful. A 
 roadmap and only happen if they stay simple and are fun to build. It's maintained as a hobby, best effort, and
 nothing here is a promise. Kind issues and pull requests are welcome.
 
-<table>
-  <tr>
-    <td><img src="docs/screenshots/theme-y2k-blue.png" alt="Y2K Blue theme with a neon-effect label"></td>
-    <td><img src="docs/screenshots/theme-y2k-pink.png" alt="Y2K Pink theme"></td>
-  </tr>
-  <tr>
-    <td><img src="docs/screenshots/theme-gunmetal.png" alt="Gunmetal theme"></td>
-    <td><img src="docs/screenshots/theme-handheld.png" alt="Handheld theme, with the preview tinted olive green"></td>
-  </tr>
-</table>
-
-<p align="center"><img src="docs/screenshots/image-layout.png" width="720"
-alt="A dithered picture next to a caption, with the Image tab's dither, tone and looks controls"></p>
-
-<p align="center"><sub>The four themes (Y2K Blue, Y2K Pink, Gunmetal, Handheld), and a picture with a caption using ordered
-dithering. Regenerate with <code>python packaging/make_screenshots.py</code>.</sub></p>
-
 ## Features
 
 - **Live 1-bit preview** that is the same bitmap that gets printed (what you see is what you stick).
@@ -87,19 +70,19 @@ sudo udevadm control --reload   # then replug the printer
 ## With pip, on any system with Python 3.9+
 
 ```bash
-pip install "t003-label-gui[gui] @ git+https://github.com/MiNombreEsPablo/t003-label-gui"   # the window and the CLI
-pip install "t003-label-gui @ git+https://github.com/MiNombreEsPablo/t003-label-gui"        # only the CLI (no Qt)
+pip install "t003-label-gui[web] @ git+https://github.com/MiNombreEsPablo/t003-label-gui"   # the desktop window and the CLI
+pip install "t003-label-gui @ git+https://github.com/MiNombreEsPablo/t003-label-gui"        # only the CLI
 ```
 
-pip picks the newest Qt that exists for your system, so this reaches older distros and Python versions than the
-downloads above. The command-line tool `t003-print` needs no Qt at all, so it also runs on a Raspberry Pi, a server or
+This reaches older distros and Python versions than the downloads above. The command-line tool `t003-print` needs no
+window toolkit, so it also runs on a Raspberry Pi, a server or
 anything else with Python and USB; on platforms without a bundled libusb, install the system one (`apt install
 libusb-1.0-0`). The window is `t003-gui`.
 
 ## From source
 
 ```bash
-python -m venv .venv && .venv/bin/pip install -e '.[dev]'   # [dev] includes the window (PySide6) and pytest
+python -m venv .venv && .venv/bin/pip install -e '.[dev]'   # [dev] = pytest
 .venv/bin/t003-gui          # the app
 .venv/bin/t003-print --help # the CLI
 .venv/bin/pytest            # tests, no printer needed
@@ -136,7 +119,7 @@ work to build and to keep working).
 **Later**
 - [ ] `fun` More themes: Win95/98 grey, and user-defined colour themes
 - [ ] `useful` Zoomable preview (View > Zoom, Ctrl+plus/minus/0) with a ruler/grid overlay
-- [ ] `fun` `big` Webcam capture: take a photo and print it (needs Qt Multimedia, so a larger download)
+- [ ] `fun` `big` Webcam capture: take a photo and print it (in the browser: `getUserMedia`)
 - [ ] `polish` Accessibility pass: the image controls have screen-reader names; name the rest, try Orca and NVDA, and show a checkbox's state with a tick as well as colour
 - [ ] `polish` A keyboard-shortcuts window (Ctrl+?) and F1 help, once there are enough shortcuts to list
 - [ ] `polish` Move "Open presets folder" out of Help (it's a utility, so File or a Settings menu)
