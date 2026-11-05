@@ -116,16 +116,10 @@ async function main() {
   });
   addEventListener("drop", (event) => {
     document.body.classList.remove("dropping");
-    const label = Array.from((event.dataTransfer && event.dataTransfer.files) || []).find((f) => f.name.toLowerCase().endsWith(".t003label"));
-    if (label) {
-      event.preventDefault();
-      openLabelFile(label);
-      return;
-    }
     const file = pictureIn(event.dataTransfer);
     if (file) {
       event.preventDefault();
-      useFile(file);
+      openOrUse(file);
     }
   });
   addEventListener("paste", (event) => { // a picture on the clipboard wins even in a text box; text pastes as usual
@@ -294,15 +288,27 @@ async function main() {
     }
   });
 
-  // the whole label design as a .t003label file (the picture travels inside it), and back
+  // the whole label design as a label file (a PNG with the design inside; the picture travels inside it), and back
   async function openLabelFile(file) {
     try {
-      form.write(await engine.compositionLoads(await file.text()));
+      form.write(await engine.compositionLoads(new Uint8Array(await file.arrayBuffer())));
       status(`Opened ${file.name}.`);
       await refresh();
     } catch (e) {
       status(`Couldn't open ${file.name}: ${e.message}`, true);
     }
+  }
+  // a dropped PNG saved by Dotlab opens as the label it holds; any other picture becomes the label's picture
+  async function openOrUse(file) {
+    if (file.type === "image/png" || file.name.toLowerCase().endsWith(".png")) {
+      try {
+        const label = await engine.compositionLoads(new Uint8Array(await file.arrayBuffer()));
+        form.write(label);
+        status(`Opened ${file.name}.`);
+        return refresh();
+      } catch (_) { /* only a picture */ }
+    }
+    return useFile(file);
   }
   $("open-label").addEventListener("click", () => $("label-file").click());
   $("label-file").addEventListener("change", () => {
@@ -313,7 +319,7 @@ async function main() {
   async function saveLabel() {
     try {
       const file = await engine.compositionDumps(spec());
-      const result = await files.save(file.data, file.name, options.composition.mime, "T003 label");
+      const result = await files.save(file.data, file.name, options.composition.mime, "Dotlab label (PNG)");
       if (result.error) status(result.error, true);
       else if (!result.cancelled) status(`Saved ${result.saved}.`);
     } catch (e) {
@@ -386,7 +392,7 @@ async function main() {
   status("");
   await refresh();
   // For tests: the label as the page sees it, and whether it is idle.
-  window.__t003 = { client: "web", spec, form, refresh, idle: () => !rendering, pixels: () => last };
+  window.__t003 = { client: "web", engine, spec, form, refresh, idle: () => !rendering, pixels: () => last };
 }
 
 function fill(select, values) {

@@ -52,7 +52,7 @@ def test_a_saved_label_that_is_only_a_doodle_prints(tmp_path, monkeypatch):
 
     ink = Image.new("L", (core.W, core.SH), 0)
     ink.paste(255, (10, 10, 100, 30))
-    path = tmp_path / "scribble.t003label"
+    path = tmp_path / "scribble.png"
     composition.save(path, core.LabelSpec(doodle=doodle.encode(ink)))
     sent = []
     monkeypatch.setattr(core, "print_label", lambda spec, address='auto': sent.append(spec) or [])

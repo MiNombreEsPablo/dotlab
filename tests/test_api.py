@@ -1,10 +1,11 @@
+import io
 import json
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
-from PIL import ImageFont
+from PIL import Image, ImageFont
 
 from t003gui import api, core, fonts, protocol, render, spec
 
@@ -161,31 +162,32 @@ def test_files_are_named_after_the_label():
 # --- label files through the engine ------------------------------------------------------------------------------------
 
 def test_a_label_file_round_trips_through_the_api(tmp_path):
-    from PIL import Image
-
     picture = tmp_path / "p.png"
     Image.new("RGB", (40, 30), (200, 30, 30)).save(picture)
     original = {"text": "Hi", "border": True, "border_style": "bevel", "image_path": api.adopt_image(str(picture), "p.png"),
                 "image_layout": "left", "dither": "bayer4", "copies": 3}
-    text = api.composition_dumps(original)
-    assert json.loads(text)["spec"]["image_path"] == "" and "image" in json.loads(text)  # the picture travels inside
-    back = json.loads(api.composition_loads(text))
+    blob = api.composition_dumps(original)
+    inside = json.loads(Image.open(io.BytesIO(blob)).text["dotlab"])
+    assert inside["spec"]["image_path"] == "" and "image" in inside  # the picture travels inside
+    file = tmp_path / "label.png"
+    file.write_bytes(blob)
+    back = json.loads(api.composition_loads(str(file)))
     assert back["text"] == "Hi" and back["border_style"] == "bevel" and back["copies"] == 3
     assert back["image_layout"] == "left" and back["dither"] == "bayer4"
     assert back["image_path"] and Path(back["image_path"]).read_bytes() == picture.read_bytes()
     assert api.preview_pixels(back) == api.preview_pixels(original)  # the same label
 
 
-@pytest.mark.parametrize("text, expected", [
-    ("{broken", "not a label file"),
-    ('{"format": "something else", "spec": {}}', "not a T003 label file"),
-    ('{"format": "t003-label", "version": 99, "spec": {}}', "newer version"),
-    ('{"format": "t003-label", "version": 1, "spec": {}, "image": {"data": "***"}}', "damaged"),
-])
-def test_a_file_that_is_not_a_label_gets_a_sentence(text, expected):
-    with pytest.raises(ValueError, match=expected):
-        api.composition_loads(text)
+def test_a_file_that_is_not_a_label_gets_a_sentence(tmp_path):
+    plain = tmp_path / "plain.png"
+    Image.new("1", (8, 8), 1).save(plain)
+    with pytest.raises(ValueError, match="only an image"):
+        api.composition_loads(str(plain))
+    junk = tmp_path / "junk.png"
+    junk.write_bytes(b"{broken")
+    with pytest.raises(ValueError, match="isn't a PNG"):
+        api.composition_loads(str(junk))
 
 
 def test_the_label_file_type_is_published():
-    assert json.loads(api.options())["composition"] == {"extension": ".t003label", "mime": "application/json"}
+    assert json.loads(api.options())["composition"] == {"extension": ".png", "mime": "image/png"}
