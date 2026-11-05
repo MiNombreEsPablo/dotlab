@@ -1,6 +1,6 @@
 // The UI, written once. It only ever talks to three seams, whichever client it runs in:
 //   engine:  options(), preview(spec) -> {pixels, hints}                 (engine/pyodide.js)
-//   printer: modes, print(spec, {mode, address}) -> {problems, error}    (printer/ble.js)
+//   printer: modes, print(spec, {mode}) -> {problems, error}    (printer/index.js: ble.js or serial.js)
 //   store:   get(key, fallback), set(key, value)                         (store/local.js)
 //   files:   save(bytes, name, mime, kind), copyImage(png)              (files/browser.js)
 //   presets: list(), get(name), save(name, label), delete(name)          (presets/local.js)
@@ -20,7 +20,7 @@ const status = (text, isError = false) => {
 
 async function connectSeams() {
   const [engineModule, printerModule, storeModule, filesModule, presetsModule] = await Promise.all([
-    import("./engine/pyodide.js"), import("./printer/ble.js"), import("./store/local.js"), import("./files/browser.js"),
+    import("./engine/pyodide.js"), import("./printer/index.js"), import("./store/local.js"), import("./files/browser.js"),
     import("./presets/local.js"),
   ]);
   const engine = engineModule.createEngine(new URL("./", location.href).href);
@@ -136,18 +136,8 @@ async function main() {
   fill($("mode"), printer.modes);
   const saved = await store.get("printer", {});
   if (printer.modes.includes(saved.mode)) $("mode").value = saved.mode;
-  $("address").value = saved.address || "";
-  const syncPrinterRow = () => {
-    $("address").hidden = $("mode").value !== "Bluetooth" || printer.modes.length < 2;
-  };
-  syncPrinterRow();
   $("printer-row").hidden = printer.modes.length < 2;
-  const rememberPrinter = () => {
-    syncPrinterRow();
-    store.set("printer", { mode: $("mode").value, address: $("address").value.trim() });
-  };
-  $("mode").addEventListener("input", rememberPrinter);
-  $("address").addEventListener("change", rememberPrinter);
+  $("mode").addEventListener("input", () => store.set("printer", { mode: $("mode").value }));
   form.output.append($("printer-row"));
   $("output").append(form.output);
 
@@ -333,7 +323,7 @@ async function main() {
     if (!hasContent(current)) return status("Nothing to print.");
     $("print").disabled = true;
     status("Printing…");
-    const result = await printer.print(current, { mode: $("mode").value, address: $("address").value.trim() });
+    const result = await printer.print(current, { mode: $("mode").value });
     $("print").disabled = false;
     if (result.error) status(result.error, true);
     else status(result.problems.length ? `Printer: ${result.problems.join(", ")}` : "Sent.");
