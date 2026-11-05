@@ -1,9 +1,19 @@
+import io
 import json
 
 import pytest
-from PIL import Image
+from PIL import Image, PngImagePlugin
 
 from t003gui import cli, composition, core
+
+
+def _file(payload, key=composition.KEY) -> bytes:
+    """A PNG carrying `payload` (a dict, or raw text) the way a label file does, to test what the reader accepts."""
+    info = PngImagePlugin.PngInfo()
+    info.add_text(key, payload if isinstance(payload, str) else json.dumps(payload), zip=True)
+    out = io.BytesIO()
+    Image.new("1", (8, 8), 1).save(out, "PNG", pnginfo=info)
+    return out.getvalue()
 
 
 def _spec(**kw):
@@ -27,7 +37,7 @@ def test_image_is_embedded_so_the_file_travels(tmp_path):
     composition.save(path, _spec(image_path=str(art)))
     art.unlink()  # as if the file were opened on another machine
 
-    data = json.loads(path.read_text())
+    data = json.loads(Image.open(path).text[composition.KEY])
     assert data["spec"]["image_path"] == "" and data["image"]["name"] == "art.png"
     loaded = composition.load(path, image_dir=tmp_path / "out")
     assert loaded.image_path.startswith(str(tmp_path / "out")) and Image.open(loaded.image_path).size == (30, 20)
@@ -43,29 +53,51 @@ def test_a_missing_image_keeps_its_path_instead_of_failing(tmp_path):
 def test_embedded_names_cannot_escape_the_image_folder(tmp_path):
     blob = "aGk="  # "hi"
     for name in ("../../evil.png", "/etc/passwd", "a/b/c.png", "x.sh", ""):
-        text = json.dumps({"format": composition.FORMAT, "version": 1, "spec": {}, "image": {"name": name, "data": blob}})
+        payload = {"format": composition.FORMAT, "version": 1, "spec": {}, "image": {"name": name, "data": blob}}
         out = tmp_path / "out"
-        path = composition.Path(composition.loads(text, image_dir=out).image_path)
+        path = composition.Path(composition.loads(_file(payload), image_dir=out).image_path)
         assert path.parent == out and path.suffix in {".png", ".jpg", ".jpeg", ".bmp", ".gif", ".webp"}
 
 
-@pytest.mark.parametrize("text, message", [
-    ("not json", "not a label file"),
-    ("[]", "not a T003 label file"),
-    (json.dumps({"format": "other", "version": 1, "spec": {}}), "not a T003 label file"),
-    (json.dumps({"format": composition.FORMAT, "version": 99, "spec": {}}), "newer version"),
-    (json.dumps({"format": composition.FORMAT, "spec": {}}), "newer version"),
-    (json.dumps({"format": composition.FORMAT, "version": 1, "spec": {}, "image": {"name": "a.png", "data": "@@"}}),
-     "damaged"),
+@pytest.mark.parametrize("blob, message", [
+    (b"not a picture at all", "isn't a PNG"),
+    (_file("not json"), "damaged"),
+    (_file("[]"), "not a Dotlab label file"),
+    (_file({"format": "other", "version": 1, "spec": {}}), "not a Dotlab label file"),
+    (_file({"format": composition.FORMAT, "version": 99, "spec": {}}), "newer version"),
+    (_file({"format": composition.FORMAT, "spec": {}}), "newer version"),
+    (_file({"format": composition.FORMAT, "version": 1, "spec": {}, "image": {"name": "a.png", "data": "@@"}}), "damaged"),
+    (_file({"format": composition.FORMAT, "version": 1, "spec": {}}, key="something-else"), "only an image"),
 ])
-def test_bad_files_are_refused_with_a_reason(text, message):
+def test_bad_files_are_refused_with_a_reason(blob, message):
     with pytest.raises(ValueError, match=message):
-        composition.loads(text)
+        composition.loads(blob)
+
+
+def test_the_file_is_a_picture_of_the_printed_label(tmp_path):
+    spec = _spec()
+    path = tmp_path / "a.png"
+    composition.save(path, spec)
+    picture = Image.open(path)
+    assert (picture.size, picture.mode) == ((core.W, core.SH), "1")
+    assert picture.tobytes() == core.label_bitmap(spec).tobytes()  # any viewer shows exactly what prints
+
+
+def test_a_big_embedded_photo_survives(tmp_path):
+    import os
+
+    noise = tmp_path / "noise.png"
+    Image.frombytes("RGB", (900, 900), os.urandom(900 * 900 * 3)).save(noise)  # incompressible, a few MB
+    assert noise.stat().st_size > 2_000_000
+    path = tmp_path / "a.png"
+    composition.save(path, _spec(image_path=str(noise)))
+    back = composition.load(path, image_dir=tmp_path / "out")
+    assert composition.Path(back.image_path).read_bytes() == noise.read_bytes()
 
 
 def test_unknown_fields_are_ignored():
-    text = json.dumps({"format": composition.FORMAT, "version": 1, "spec": {"text": "hi", "from_the_future": 1}})
-    assert composition.loads(text).text == "hi"
+    blob = _file({"format": composition.FORMAT, "version": 1, "spec": {"text": "hi", "from_the_future": 1}})
+    assert composition.loads(blob).text == "hi"
 
 
 def test_export_png_is_the_printed_sticker(tmp_path):
@@ -95,9 +127,9 @@ def test_cli_loads_a_composition_and_flags_override_it(tmp_path):
 
 
 def test_wrong_typed_fields_fall_back_to_their_defaults():
-    text = json.dumps({"format": composition.FORMAT, "version": 1,
-                       "spec": {"text": "hi", "copies": "two", "bold": 1, "gamma": 2, "threshold": None}})
-    spec = composition.loads(text)
+    blob = _file({"format": composition.FORMAT, "version": 1,
+                  "spec": {"text": "hi", "copies": "two", "bold": 1, "gamma": 2, "threshold": None}})
+    spec = composition.loads(blob)
     assert (spec.text, spec.copies, spec.bold, spec.gamma, spec.threshold) == ("hi", 1, True, 2, None)
 
 

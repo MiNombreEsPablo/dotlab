@@ -87,16 +87,19 @@ const handlers = {
       throw new Error(pythonMessage(e));
     }
   },
-  async compositionDumps({ spec }) { // the label as the text of a .t003label file
+  async compositionDumps({ spec }) { // the label as a label file (a PNG with the design inside)
+    await ensureFonts(spec);
     try {
-      return { data: new TextEncoder().encode(api.composition_dumps(spec)), name: `${api.file_stem(spec)}.t003label` };
+      return { data: takeBytes(api.composition_dumps(spec)), name: `${api.file_stem(spec)}.png` };
     } catch (e) {
       throw new Error(pythonMessage(e));
     }
   },
-  async compositionLoads({ text }) { // a .t003label file -> the label, as JSON text
+  async compositionLoads({ data }) { // the bytes of a label file -> the label, as JSON text
+    py.FS.mkdirTree("/tmp/t003-incoming");
+    py.FS.writeFile("/tmp/t003-incoming/label.png", data);
     try {
-      return api.composition_loads(text);
+      return api.composition_loads("/tmp/t003-incoming/label.png");
     } catch (e) {
       throw new Error(pythonMessage(e));
     }

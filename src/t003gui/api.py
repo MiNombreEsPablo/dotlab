@@ -11,7 +11,7 @@ from __future__ import annotations
 import io
 import json
 from dataclasses import asdict, replace
-from pathlib import PurePath
+from pathlib import Path, PurePath
 
 from . import __version__, about, bluetooth, composition, doodle, fonts, form, imaging, presets, render, spec, stickers
 from .protocol import STATUS_QUERY, status_problems, tspl  # noqa: F401
@@ -65,15 +65,16 @@ def preset_entry(name: str, raw: str | bytes | dict) -> str:
     return json.dumps({"name": presets.clean_name(name), "spec": asdict(label)})
 
 
-def composition_dumps(raw: str | bytes | dict) -> str:
-    """The whole label design as the text of a `.t003label` file (the picture travels inside, the doodle is compact)."""
+def composition_dumps(raw: str | bytes | dict) -> bytes:
+    """The whole label design as a label file: a PNG of the printed sticker with the design inside it (the picture travels
+    inside, the doodle is compact)."""
     return composition.dumps(label_from_json(raw))
 
 
-def composition_loads(text: str) -> str:
-    """The label in a `.t003label` file, as JSON text for a client to show; an embedded picture is stored where the
-    engine can read it. Raises ValueError with a sentence for the user when it is not a label file."""
-    return json.dumps(asdict(composition.loads(text)))
+def composition_loads(path: str) -> str:
+    """The label in the label file a client wrote to `path`, as JSON text for a client to show; an embedded picture is
+    stored where the engine can read it. Raises ValueError with a sentence for the user when it is not a label file."""
+    return json.dumps(asdict(composition.loads(Path(path).read_bytes())))
 
 
 def adopt_image(path: str, name: str = "") -> str:
@@ -136,6 +137,6 @@ def options() -> str:
         "export": {"scales": [[s, spec.export_size_name(s)] for s in spec.EXPORT_SCALES], "extension": ".png"},
         "app": {"name": "T003 Label Studio", "version": __version__, "repo_url": about.REPO_URL,
                 "issues_url": about.ISSUES_URL, "fonts": len(fonts.BUNDLED)},
-        "composition": {"extension": composition.SUFFIX, "mime": "application/json"},
+        "composition": {"extension": composition.SUFFIX, "mime": "image/png"},
         "content_fields": list(spec.CONTENT_FIELDS),  # a label with none of these set has nothing to print
     })

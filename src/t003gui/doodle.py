@@ -1,6 +1,6 @@
 """Freehand doodles: a 1-bit ink mask the size of the sticker, stored in `LabelSpec.doodle` as base64 PNG text. Qt-free.
 
-A string rather than a file, so a doodle travels with presets and `.t003label` files and needs no extra plumbing. White
+A string rather than a file, so a doodle travels with presets and label files and needs no extra plumbing. White
 pixels in the mask are ink (printed black), black ones are untouched label.
 """
 from __future__ import annotations
