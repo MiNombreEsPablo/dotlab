@@ -6,6 +6,10 @@
 <title>Dotlab</title>
 <link rel="stylesheet" href="themes.css">
 <link rel="icon" href="assets/icon-mark.png">
+<script>
+  /* remember Pyodide, the fonts and the engine between visits (sw.js): fast repeat visits, and it works offline */
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
 <link rel="stylesheet" href="style.css">
 <script>
   /* the chosen look, before the first paint, so the page doesn't flash Y2K Blue first */
