@@ -157,7 +157,7 @@ body {
 @media (min-width: 22rem) {
   .field { grid-template-columns: 6.5rem minmax(0, 1fr); align-items: center; gap: 12px; }
 }
-textarea, select, input:not([type="checkbox"]) {
+textarea, select, .pick, input:not([type="checkbox"]) {
   width: 100%;
   padding: 3px 8px;
   font: inherit;
@@ -172,13 +172,30 @@ textarea:focus, select:focus, input:focus { outline: none; border-color: var(--f
 textarea:disabled, select:disabled, input:disabled { color: var(--dis-text); background: var(--input-dis-bg); border-color: var(--dis-border); }
 input::placeholder { color: var(--placeholder); opacity: 1; }
 /* Our own select: some web engines (the desktop shell's) keep a light native background whatever the theme says. */
-select {
+select, .pick {
   appearance: none;
   -webkit-appearance: none;
   padding-right: 2.2rem;
   background: var(--input-bg) var(--select-arrow) no-repeat right .7rem center;
 }
 option, optgroup { background: var(--input-bg); color: var(--input-text); }
+
+/* the Font dropdown (fontpreview.js): a button that looks like a select, and a list we draw so each name has its own face */
+.pick { display: block; text-align: left; cursor: pointer; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pick:focus, .pick[aria-expanded="true"] { outline: none; border-color: var(--focus-border); }
+.pick:disabled { color: var(--dis-text); background-color: var(--input-dis-bg); border-color: var(--dis-border); cursor: default; }
+.pick-wrap { position: relative; min-width: 0; }
+.pick-list {
+  position: absolute; z-index: 20; left: 0; right: 0; top: calc(100% + 2px);
+  max-height: min(60vh, 28rem); overflow-y: auto; margin: 0; padding: 4px 0; list-style: none;
+  color: var(--input-text); background: var(--input-bg);
+  border: 2px solid var(--focus-border); border-radius: var(--r-ctl);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, .25);
+}
+.pick-heading { padding: 4px 10px; font-weight: bold; color: var(--tab-unselected); }
+.pick-list [role="option"] { position: relative; padding: 4px 10px 4px 22px; cursor: pointer; }
+.pick-list [role="option"].active { color: var(--select-text); background: var(--select-bg); }
+.pick-list [role="option"][aria-selected="true"]::before { content: "\2022"; position: absolute; left: 9px; }
 
 /* checkboxes are LEDs */
 input[type="checkbox"] {
