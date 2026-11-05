@@ -1,5 +1,5 @@
 // Printer seam, browser adapter: print over Web Bluetooth (Chrome/Edge/Opera on Android and desktop; not Safari, iOS
-// or Firefox). The UUIDs, chunk size and gap come from the engine's options (src/t003gui/bluetooth.py), so nothing about
+// or Firefox). The UUIDs, chunk size and gap come from the engine's options (src/dotlab/bluetooth.py), so nothing about
 // the printer is repeated here.
 //   modes: string[]   print(spec, {mode, address}) -> {problems: string[], error: string|null}
 

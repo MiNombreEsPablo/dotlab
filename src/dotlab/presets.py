@@ -11,7 +11,7 @@ from .spec import LabelSpec
 
 def default_path() -> Path:
     base = os.environ.get("XDG_CONFIG_HOME") or Path.home() / ".config"
-    return Path(base) / "t003-label-gui" / "presets.json"
+    return Path(base) / "dotlab" / "presets.json"
 
 
 NAME_MAX = 60

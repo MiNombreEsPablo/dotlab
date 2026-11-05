@@ -2,7 +2,7 @@
 // is said in a sentence). A preset is a style, not a picture: the engine decides what is kept (api.preset_entry).
 //   list() -> names, sorted   get(name) -> label | null   save(name, label) -> the name it was kept under   delete(name)
 
-const KEY = "t003:presets";
+const KEY = "dotlab:presets";
 
 export function createPresets(engine) {
   const read = () => {

@@ -1,4 +1,4 @@
-"""Build the static site (what GitHub Pages serves): `python src/t003gui/web/build_site.py OUT [--no-wheels]`.
+"""Build the static site (what GitHub Pages serves): `python src/dotlab/web/build_site.py OUT [--no-wheels]`.
 
 The site is exactly the layout the dev server fakes: the files of web/, plus
   engine/<module>.py        the engine's Python sources (the modules `dev_server.ENGINE_MODULES` lists)

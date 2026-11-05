@@ -1,6 +1,6 @@
 from PIL import Image
 
-from t003gui import core
+from dotlab import core
 
 
 def test_render_size_and_gap_stays_white():
@@ -74,13 +74,13 @@ def test_version_is_single_sourced():
     import re
     from pathlib import Path
 
-    import t003gui
+    import dotlab
 
     text = (Path(__file__).parent.parent / "pyproject.toml").read_text(encoding="utf-8")
-    assert re.fullmatch(r"\d+\.\d+\.\d+(rc\d+)?", t003gui.__version__)  # rcN: a pre-release (the release workflow marks it so)
+    assert re.fullmatch(r"\d+\.\d+\.\d+(rc\d+)?", dotlab.__version__)  # rcN: a pre-release (the release workflow marks it so)
     project = text.split("[project]", 1)[1].split("\n[", 1)[0]
     assert 'dynamic = ["version"]' in project and not re.search(r"^version\s*=", project, re.M)
-    assert 'version = {attr = "t003gui.__version__"}' in text
+    assert 'version = {attr = "dotlab.__version__"}' in text
 
 
 def test_label_bitmap_is_the_sticker_only_and_export_uses_it(tmp_path):

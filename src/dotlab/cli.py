@@ -1,4 +1,4 @@
-"""Command-line printing: print-label "text" --qr URL --image FILE ..."""
+"""Command-line printing: dotlab-print "text" --qr URL --image FILE ..."""
 from __future__ import annotations
 
 import argparse
@@ -10,30 +10,30 @@ from .presets import PresetStore
 
 EXAMPLES = r"""
 examples:
-  print-label "Hello"                          auto-fit text
-  print-label "Line 1\nLine 2" --border        multiple lines
-  print-label "Left" --align left --font "Noto Sans Mono" --no-bold
-  print-label "WELCOME!" --effect 3d --frame marquee          early-web style
-  print-label "Under\nConstruction" --bars --effect outline
-  print-label "Hi" --background stars --effect shadow --italic
-  print-label "Wi-Fi" --qr "WIFI:S:x;;"        text left, QR right
-  print-label --image art.png --threshold 160  hard cutoff, good for flat colours
-  print-label --image photo.jpg --dither bayer4 --contrast 20   crosshatch dither, a bit more punch
-  print-label "Mug" --image mug.png --layout left      photo with a caption
-  print-label --image photo.jpg --pixelate 3 --dither bayer4    chunky handheld-camera look
-  print-label --preset shelf --copies 3        saved GUI preset
-  print-label "x" --preview out.png            render to PNG, don't print
+  dotlab-print "Hello"                          auto-fit text
+  dotlab-print "Line 1\nLine 2" --border        multiple lines
+  dotlab-print "Left" --align left --font "Noto Sans Mono" --no-bold
+  dotlab-print "WELCOME!" --effect 3d --frame marquee          early-web style
+  dotlab-print "Under\nConstruction" --bars --effect outline
+  dotlab-print "Hi" --background stars --effect shadow --italic
+  dotlab-print "Wi-Fi" --qr "WIFI:S:x;;"        text left, QR right
+  dotlab-print --image art.png --threshold 160  hard cutoff, good for flat colours
+  dotlab-print --image photo.jpg --dither bayer4 --contrast 20   crosshatch dither, a bit more punch
+  dotlab-print "Mug" --image mug.png --layout left      photo with a caption
+  dotlab-print --image photo.jpg --pixelate 3 --dither bayer4    chunky handheld-camera look
+  dotlab-print --preset shelf --copies 3        saved GUI preset
+  dotlab-print "x" --preview out.png            render to PNG, don't print
 """
 
 
 def main(argv: list[str] | None = None) -> None:
     p = argparse.ArgumentParser(
-        prog="print-label",
+        prog="dotlab-print",
         description="Print to the ORGBRO T003 label printer (384x224 dots).",
         epilog=EXAMPLES,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    p.add_argument("--version", action="version", version=f"t003-label-gui {__version__}")
+    p.add_argument("--version", action="version", version=f"dotlab {__version__}")
     p.add_argument("text", nargs="?", help=r"text to print (use \n for newlines)")
     p.add_argument("--qr", help="QR code content")
     p.add_argument("--image", help="image file to print")

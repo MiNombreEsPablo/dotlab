@@ -4,7 +4,7 @@ import subprocess
 
 import pytest
 
-from t003gui import api, bluetooth, cli, core, protocol
+from dotlab import api, bluetooth, cli, core, protocol
 
 ADDRESS = "57:37:EB:A7:7A:36"
 

@@ -1,6 +1,6 @@
 /* The looks. Every colour, bevel, radius, font and banner detail the page uses is a token below, set per theme; style.css
    only says where to use them. A theme is chosen by data-theme on <html> (web/themes.js). Values are the Qt app's
-   (src/t003gui/theme.py), which this replaces.
+   (src/dotlab/theme.py), which this replaces.
 
    Y2K Blue is the default (:root). Y2K Pink changes colours only, so it overrides just those. Gunmetal, Handheld and
    System define every token themselves, so nothing leaks into them from the candy plastic.

@@ -18,5 +18,5 @@ def _node_major() -> int:
 
 @pytest.mark.skipif(_node_major() < 22, reason="needs Node.js 22 or newer (it runs ES modules without a build step)")
 def test_the_doodle_raster_passes_its_node_tests():
-    result = subprocess.run(["node", "--test", "src/t003gui/web/test/*.test.js"], capture_output=True, text=True, cwd=ROOT, timeout=120)
+    result = subprocess.run(["node", "--test", "src/dotlab/web/test/*.test.js"], capture_output=True, text=True, cwd=ROOT, timeout=120)
     assert result.returncode == 0, result.stdout + result.stderr

@@ -4,7 +4,7 @@ import types
 
 import pytest
 
-from t003gui import ble, bluetooth, core, protocol
+from dotlab import ble, bluetooth, core, protocol
 
 PAYLOAD = bytes(range(256)) * 3  # 768 bytes: five 180-byte chunks
 

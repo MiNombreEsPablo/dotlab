@@ -1,4 +1,4 @@
-// The Python engine in the browser: Pyodide in a worker, driving t003gui.api.
+// The Python engine in the browser: Pyodide in a worker, driving dotlab.api.
 // Messages in: {id, method, args}; out: {id, result} or {id, error}; {progress} while loading.
 
 let py = null;
@@ -21,7 +21,7 @@ async function ensureFonts(specJson) {
   needed.destroy();
   for (const name of names) {
     if (loadedFonts.has(name)) continue;
-    py.FS.writeFile(`/pkg/t003gui/fonts/${name}`, await fetchBytes(`${base}fonts/${encodeURIComponent(name)}`));
+    py.FS.writeFile(`/pkg/dotlab/fonts/${name}`, await fetchBytes(`${base}fonts/${encodeURIComponent(name)}`));
     loadedFonts.add(name);
   }
 }
@@ -52,12 +52,12 @@ const handlers = {
     const extras = wheels.length ? wheels : manifest.pypi;
     await py.runPythonAsync(`import micropip\nawait micropip.install(${JSON.stringify(extras)})`);
     progress("Loading the label engine…");
-    py.FS.mkdirTree("/pkg/t003gui/fonts");
+    py.FS.mkdirTree("/pkg/dotlab/fonts");
     for (const name of manifest.python) {
-      py.FS.writeFile(`/pkg/t003gui/${name}`, await fetchBytes(`${base}engine/${name}`));
+      py.FS.writeFile(`/pkg/dotlab/${name}`, await fetchBytes(`${base}engine/${name}`));
     }
     py.runPython("import sys; sys.path.insert(0, '/pkg')");
-    api = py.pyimport("t003gui.api");
+    api = py.pyimport("dotlab.api");
     return null;
   },
   async options() {
@@ -72,10 +72,10 @@ const handlers = {
     return { pixels, hints: list };
   },
   async addImage({ data, name }) {
-    py.FS.mkdirTree("/tmp/t003-incoming");
-    py.FS.writeFile("/tmp/t003-incoming/upload", data);
+    py.FS.mkdirTree("/tmp/dotlab-incoming");
+    py.FS.writeFile("/tmp/dotlab-incoming/upload", data);
     try {
-      return api.adopt_image("/tmp/t003-incoming/upload", name);
+      return api.adopt_image("/tmp/dotlab-incoming/upload", name);
     } catch (e) {
       throw new Error(pythonMessage(e));
     }
@@ -96,10 +96,10 @@ const handlers = {
     }
   },
   async compositionLoads({ data }) { // the bytes of a label file -> the label, as JSON text
-    py.FS.mkdirTree("/tmp/t003-incoming");
-    py.FS.writeFile("/tmp/t003-incoming/label.png", data);
+    py.FS.mkdirTree("/tmp/dotlab-incoming");
+    py.FS.writeFile("/tmp/dotlab-incoming/label.png", data);
     try {
-      return api.composition_loads("/tmp/t003-incoming/label.png");
+      return api.composition_loads("/tmp/dotlab-incoming/label.png");
     } catch (e) {
       throw new Error(pythonMessage(e));
     }

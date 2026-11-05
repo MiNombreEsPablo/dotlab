@@ -1,7 +1,7 @@
 import pytest
 from PIL import Image
 
-from t003gui import cli, core
+from dotlab import cli, core
 
 MARGIN = core.MARGIN
 AX0, AX1, AY0, AY1 = MARGIN, core.W - MARGIN, MARGIN, core.SH - MARGIN  # usable area with no border or bars

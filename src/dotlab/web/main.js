@@ -392,7 +392,7 @@ async function main() {
   status("");
   await refresh();
   // For tests: the label as the page sees it, and whether it is idle.
-  window.__t003 = { client: "web", engine, spec, form, refresh, idle: () => !rendering, pixels: () => last };
+  window.__dotlab = { client: "web", engine, spec, form, refresh, idle: () => !rendering, pixels: () => last };
 }
 
 function fill(select, values) {

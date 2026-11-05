@@ -1,4 +1,4 @@
-"""Rasterise src/t003gui/assets/icon.svg into the PNG/ICO/ICNS files the packages need.
+"""Rasterise src/dotlab/assets/icon.svg into the PNG/ICO/ICNS files the packages need.
 
     .venv/bin/python packaging/make_icons.py
 
@@ -16,7 +16,7 @@ from PySide6.QtGui import QGuiApplication, QImage, QPainter
 from PySide6.QtSvg import QSvgRenderer
 
 ROOT = Path(__file__).resolve().parent.parent
-SVG = ROOT / "src/t003gui/assets/icon.svg"
+SVG = ROOT / "src/dotlab/assets/icon.svg"
 OUT = ROOT / "packaging/icons"
 SIZES = (16, 24, 32, 48, 64, 128, 256, 512)
 
@@ -43,7 +43,7 @@ def mark() -> None:
     painter.setRenderHints(QPainter.Antialiasing | QPainter.SmoothPixmapTransform)
     QSvgRenderer(svg.encode()).render(painter)
     painter.end()
-    image.save(str(ROOT / "src/t003gui/assets/icon-mark.png"))
+    image.save(str(ROOT / "src/dotlab/assets/icon-mark.png"))
 
 
 def main() -> None:
@@ -51,10 +51,10 @@ def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     images = {size: render(size) for size in SIZES}
     for size, img in images.items():
-        img.save(OUT / f"t003-label-gui-{size}.png")
-    images[256].save(ROOT / "src/t003gui/assets/icon-256.png")  # used at runtime (no SVG plugin needed)
-    images[256].save(OUT / "t003-label-gui.ico", sizes=[(s, s) for s in (16, 24, 32, 48, 64, 128, 256)])
-    images[512].save(OUT / "t003-label-gui.icns")
+        img.save(OUT / f"dotlab-{size}.png")
+    images[256].save(ROOT / "src/dotlab/assets/icon-256.png")  # used at runtime (no SVG plugin needed)
+    images[256].save(OUT / "dotlab.ico", sizes=[(s, s) for s in (16, 24, 32, 48, 64, 128, 256)])
+    images[512].save(OUT / "dotlab.icns")
     mark()
     print("wrote", len(SIZES), "PNGs, .ico, .icns")
 

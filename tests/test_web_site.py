@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
-WEB = ROOT / "src" / "t003gui" / "web"
+WEB = ROOT / "src" / "dotlab" / "web"
 
 
 def _load(name):
@@ -42,8 +42,8 @@ def test_the_site_has_the_page_the_engine_and_the_fonts(site):
 def test_every_bundled_font_has_its_licence_on_the_site(site):
     out, _, _ = site
     text = (out / "licenses.txt").read_text(encoding="utf-8")
-    assert text.startswith("T003 Label Studio is MIT licensed") and "Permission is hereby granted" in text
-    from t003gui import fonts
+    assert text.startswith("Dotlab is MIT licensed") and "Permission is hereby granted" in text
+    from dotlab import fonts
 
     for family in fonts.BUNDLED:
         licence = (fonts.FONT_DIR / "LICENSES" / family.license_file)
@@ -61,7 +61,7 @@ def test_the_site_has_only_what_the_browser_needs(site):
 
 
 def test_the_site_never_refers_to_the_root_of_the_server(site):
-    """A project site lives under /t003-label-gui/, so a URL that starts with a slash would leave it."""
+    """A project site lives under /dotlab/, so a URL that starts with a slash would leave it."""
     out, _, _ = site
     pattern = re.compile(r"""(?:href|src)\s*=\s*["']/[^/]|url\(\s*["']?/[^/]|(?:fetch|import|Worker)\(\s*["'`]/[^/]""")
     for path in list(out.glob("*.html")) + list(out.glob("*.css")) + list(out.glob("**/*.js")):

@@ -1,18 +1,42 @@
-<p align="center"><img src="packaging/icons/t003-label-gui-128.png" alt="T003 Label Studio icon" width="96"></p>
+<p align="center"><img src="packaging/icons/dotlab-128.png" alt="Dotlab icon" width="96"></p>
 
-# T003 Label Studio
+# Dotlab
 
-Design and print stickers on the **ORGBRO T003** USB thermal label printer, with a live preview of exactly what the
+A label studio in your browser for cheap Bluetooth thermal label printers, with a live 1-bit preview of exactly what the
 printer will burn. Text, QR codes and images, plus a pile of early-web and cyberpunk styling, and every font can print
-Japanese (日本語).
+Japanese (日本語). Nothing to install: open the page, design, print.
+
+**→ <https://minombreespablo.github.io/dotlab/>**
+
+The first (and so far only) supported printer is the **ORGBRO T003**. The name says "dot" because that is all the
+printer has: 384 of them across a 58 mm sticker.
 
 ## What this is
 
-A fun, Y2K-flavoured label studio for cheap thermal printers: made by a hobbyist for the joy of it, and open to anyone
-who likes the same corner of the internet. It aims to stay small and playful. A new feature should be **fun**, or
-**small and useful**; heavier "serious label software" ideas (batch printing, databases, accounts) are tagged on the
-roadmap and only happen if they stay simple and are fun to build. It's maintained as a hobby, best effort, and
-nothing here is a promise. Kind issues and pull requests are welcome.
+A fun, Y2K-flavoured label studio: made by a hobbyist for the joy of it, and open to anyone who likes the same corner of
+the internet. It aims to stay small and playful. A new feature should be **fun**, or **small and useful**; heavier
+"serious label software" ideas (batch printing, databases, accounts) are tagged on the roadmap and only happen if they
+stay simple and are fun to build. It's maintained as a hobby, best effort, and nothing here is a promise. Kind issues
+and pull requests are welcome.
+
+## Where it works
+
+Printing is **Bluetooth only**, on purpose: it behaves the same everywhere, unlike USB, which needs a different driver
+story on every system. In the browser that means Web Bluetooth.
+
+| Device | Browser | Print from the page? |
+|---|---|---|
+| **Android** | Chrome or Edge | ✅ Works. Tested on a Pixel 7a with the real printer. |
+| **Windows** | Chrome or Edge | ❔ Should work (same Web Bluetooth). Not tested yet. |
+| **macOS** | Chrome or Edge | ❔ Should work. Not tested yet. |
+| **ChromeOS** | Chrome | ❔ Should work. Not tested. |
+| **Linux** | Chrome, Chromium | ❌ BlueZ can't open this printer's Bluetooth LE link. Design in the page, print with the command line (below). |
+| **iPhone, iPad** | any | ❌ iOS has no Web Bluetooth in Safari or Chrome. A third-party Web Bluetooth browser (e.g. Bluefy) may work; untested. |
+| **Firefox, Safari** | any system | ❌ No Web Bluetooth. You can still design, and save the label as an image. |
+
+Designing works in every modern browser; only the Print button needs Web Bluetooth. The page runs the label engine
+(Python, via [Pyodide](https://pyodide.org)) in your browser: the first visit downloads the engine and takes a few
+seconds (fonts load as you use them), and nothing you make leaves your device.
 
 ## Features
 
@@ -25,81 +49,49 @@ nothing here is a promise. Kind issues and pull requests are welcome.
   synthwave sun, matrix rain, halftone. **Borders:** solid, double, dotted, checker, Win95 bevel, marquee lights,
   cyber panel, HUD brackets, ruler ticks. **Bars:** under-construction hazard stripes.
 - **QR codes, images** (drag and drop or paste), copies, darkness, saved **presets**. **Image and text together:** put the
-  picture left, right, above, below or behind the text (and QR code), with a size control. **Image tab:** Floyd–Steinberg,
-  ordered (Bayer) crosshatch or hard-cutoff dithering; sliders with exact-value boxes for brightness, contrast, gamma and
-  the cutoff (double-click a slider to reset it); pixelate for chunky handheld-camera dots; mirror, flip and invert.
+  picture left, right, above, below or behind the text (and QR code), with a size control. Floyd–Steinberg, ordered
+  (Bayer) crosshatch or hard-cutoff dithering; brightness, contrast, gamma, pixelate, mirror, flip and invert.
   Transparent PNGs print on white and phone photos keep their orientation.
-- **Menus:** File (open/save a composition, export an image, **Print, Ctrl+P**), Edit (paste a clipboard image, clear it,
-  copy the label as an image with Ctrl+Shift+C), View (themes), Help.
-- **Save and share:** File > Save/Open composition keeps a whole label in one `.t003label` file (the image is embedded, so
-  it works on another machine; drop one on the window to open it, or `t003-print --file x.t003label`). File > Export
-  image writes the exact 1-bit label as a PNG, at printed size or enlarged 4×.
-- Themes (View > Theme): Y2K candy plastic in blue or pink, gunmetal with LCD-green text, a four-shade olive
-  "handheld" look (which also tints the preview; prints stay black on white), or the plain platform look.
-- Help menu: version, an About box (with a printer-found check) and a manual **Check for updates** that compares your
-  version with the latest GitHub release. It only runs when you ask.
-- A CLI with the same options: `t003-print "NEON\nNIGHTS" --effect neon --frame brackets`.
+- **Doodle:** freehand ink on the label with brushes, spray, shapes, fill and 24×24 stickers.
+- **Save and share:** *Save label* writes the label as a normal 1-bit **PNG** with the whole design stored inside it. Any
+  image viewer or editor opens it as a picture; Dotlab opens it again for editing (*Open label*, or drop it on the
+  page). *Save image* writes a plain PNG at printed size or enlarged 4×; *Copy image* puts it on the clipboard.
+- Looks: Y2K candy plastic in blue or pink, gunmetal with LCD-green text, a four-shade olive "handheld" look, or the plain
+  system look.
+- A command-line tool with the same label options.
 
-## Install
-
-Downloads are on the [Releases](../../releases) page. Every build runs a self-test (fonts, licences, icons, a Japanese
-render, libusb) in CI before it is published.
-
-| OS | Get | Needs | Notes |
-|---|---|---|---|
-| **Linux** (x86-64) | `T003-Label-Studio-*-x86_64.AppImage` | glibc 2.28 or newer: Ubuntu 20.04+, Debian 10+, RHEL/Alma/Rocky 8+, Fedora, Arch and anything newer | `chmod +x` and run. The window is Chromium inside: it needs the usual desktop libraries (`libnss3`, `libxcb-cursor0`, `libxkbcommon-x11`, `libasound2`, and on Fedora `libwayland-server`), which almost every desktop already has. If it doesn't start, run it as `./T003-Label-Studio-*.AppImage --appimage-extract-and-run` (no FUSE needed). Install the udev rule below so you can use the printer without root. |
-| **Windows** (x64) | `…-windows-x64.zip` | Windows 10 or 11 | Unzip and run `T003 Label Studio.exe`. libusb needs the printer bound to the **WinUSB** driver (e.g. with [Zadig](https://zadig.akeo.ie/)), which stops Windows' own printing to that device. |
-| **macOS** (Apple silicon or Intel) | `…-macos-arm64.zip` or `…-macos-x86_64.zip` | macOS 12 or newer | The app is unsigned: right-click → Open the first time. |
-
-Not covered by a download? See the pip install below: it works on anything with Python 3.9+ and USB, including
-Linux on ARM (Raspberry Pi), older macOS and Python-capable systems we don't build for.
-
-> **What is tested.** Printing: Linux with real hardware only. Every release build runs its self-test in CI, and the
-> Linux AppImage is also self-tested in Ubuntu 20.04, Debian 12 and Fedora containers. The macOS minimum (12) and the
-> Linux minimum (glibc 2.28) are measured on each build, and the build fails if a dependency raises them, so the
-> systems named in the table are what the measurements say, not a list of everything tried. Printing from Windows
-> and macOS hasn't been tried on a physical machine, and Windows on ARM should work through x64 emulation but is
-> untested; reports welcome.
-
-**Linux udev rule** (lets your user open the printer):
-```
-sudo cp packaging/70-t003-label-printer.rules /etc/udev/rules.d/
-sudo udevadm control --reload   # then replug the printer
-```
-
-## With pip, on any system with Python 3.9+
+## The command line (Linux, or anything with Python 3.9+)
 
 ```bash
-pip install "t003-label-gui[web] @ git+https://github.com/MiNombreEsPablo/t003-label-gui"   # the desktop window and the CLI
-pip install "t003-label-gui @ git+https://github.com/MiNombreEsPablo/t003-label-gui"        # only the CLI
+pipx install "git+https://github.com/MiNombreEsPablo/dotlab"      # or: uv tool install … / pip install …
+dotlab-print "NEON\nNIGHTS" --effect neon --frame brackets         # prints over Bluetooth
+dotlab-print "Hi" --preview hi.png                                 # render to a PNG, don't print
+dotlab-print --file my-label.png                                   # print a label saved from the web page
+dotlab-print --help
 ```
 
-This reaches older distros and Python versions than the downloads above. The command-line tool `t003-print` needs no
-window toolkit, so it also runs on a Raspberry Pi, a server or
-anything else with Python and USB; on platforms without a bundled libusb, install the system one (`apt install
-libusb-1.0-0`). The window is `t003-gui`.
+On **Linux** it prints over classic Bluetooth (RFCOMM, through BlueZ): the printer must be on and not connected to a
+phone, and it doesn't need pairing. With no `--address` it uses the first T003 `bluetoothctl` knows about (it scans for
+about 5 seconds if the system hasn't seen the printer yet). On **Windows and macOS** it uses Bluetooth LE through
+[bleak](https://github.com/hbldh/bleak); that path has only been tested against a fake bleak, never real hardware, so
+please report problems.
+
+## How it works
+
+The T003 speaks TSPL. Dotlab renders a 384×224 dot label (58 mm paper, 203 dpi, 28 mm stickers), turns it into a TSPL
+bitmap and sends it over Bluetooth: Web Bluetooth (GATT) from the page, RFCOMM or bleak from the command line. See
+[AGENTS.md](AGENTS.md) for the hardware facts and the code layout.
 
 ## From source
 
 ```bash
 python -m venv .venv && .venv/bin/pip install -e '.[dev]'   # [dev] = pytest
-.venv/bin/t003-gui          # the app
-.venv/bin/t003-print --help # the CLI
-.venv/bin/pytest            # tests, no printer needed
-packaging/install.sh        # KDE/GNOME launcher, icons and a print-label shortcut
+python src/dotlab/web/dev_server.py                          # the page at http://localhost:8000 (Web Bluetooth needs localhost or https)
+.venv/bin/dotlab-print --help                                # the CLI
+.venv/bin/pytest                                             # tests, no printer needed
 ```
 
-## How it works
-
-The T003 speaks TSPL over a plain USB printer interface. The app renders a 384×224 dot label (58 mm paper, 203 dpi,
-28 mm stickers), sends it as a TSPL bitmap with pyusb/libusb, and needs no CUPS or kernel driver. See
-[AGENTS.md](AGENTS.md) for the hardware facts and the code layout.
-
-The T003 also has Bluetooth (classic serial and BLE) and takes the same TSPL over it. The app and CLI can print over
-classic Bluetooth: choose **Bluetooth** under *Printer* in the Output box, or run `t003-print "Hi" --bluetooth`
-(optionally `--bluetooth AA:BB:CC:DD:EE:FF`). The printer has to be on and not connected to a phone, and it doesn't
-need pairing. With no address the app looks for a T003 (Linux: `bluetoothctl`; it scans for about 5 seconds if the
-system hasn't seen the printer yet). Tested on Linux only: it needs Python's Bluetooth sockets, which macOS builds don't have and Windows may.
+On a phone, `adb reverse tcp:8000 tcp:8000` makes `http://localhost:8000` reach your computer's dev server.
 
 ## Roadmap
 
@@ -109,36 +101,28 @@ fix), `infra` (builds, packaging, CI), `research` (needs hardware or a question 
 work to build and to keep working).
 
 **Next**
-- [ ] `useful` New label (Ctrl+N), File > Open Recent, and the last label restored when the app starts
-- [ ] `useful` `big` Batch-print from a CSV (`{column}` placeholders in the text and QR fields)
-- [ ] `useful` `big` Undo/redo (Edit menu), then an album: recent and saved labels as a thumbnail gallery
-- [ ] `polish` One idea for saving a design: presets (kept in the app) and `.t003label` files overlap, so merge them (e.g. Save as preset in the File menu, or a templates folder) or make the difference obvious
+- [ ] `research` Check Print from Chrome/Edge on real Windows and macOS machines, and fix what turns up. Testers wanted.
+- [ ] `useful` The first visit is slow (Pyodide): cache the engine, fonts and wheel so repeat visits are instant and offline
+- [ ] `useful` New label (Ctrl+N), Open Recent, and the last label restored when the page opens
 - [ ] `fun` More stickers (the Doodle tab has 12 so far), and a sticker that can be moved or resized after it is placed
 - [ ] `fun` Poster mode: split one large image across several stickers, with alignment marks
 
 **Later**
+- [ ] `useful` `big` Batch-print from a CSV (`{column}` placeholders in the text and QR fields)
+- [ ] `useful` `big` Undo/redo, then an album: recent and saved labels as a thumbnail gallery
+- [ ] `polish` Presets (kept in the browser) and label files overlap: merge them or make the difference obvious
 - [ ] `fun` More themes: Win95/98 grey, and user-defined colour themes
-- [ ] `useful` Zoomable preview (View > Zoom, Ctrl+plus/minus/0) with a ruler/grid overlay
-- [ ] `fun` `big` Webcam capture: take a photo and print it (in the browser: `getUserMedia`)
-- [ ] `polish` Accessibility pass: the image controls have screen-reader names; name the rest, try Orca and NVDA, and show a checkbox's state with a tick as well as colour
-- [ ] `polish` A keyboard-shortcuts window (Ctrl+?) and F1 help, once there are enough shortcuts to list
-- [ ] `polish` Move "Open presets folder" out of Help (it's a utility, so File or a Settings menu)
-- [ ] `infra` Publish to PyPI, so `pip install t003-label-gui` works without the git URL (the wheel is already built and tested in CI); only if someone asks
-- [ ] `infra` Native Linux ARM64 and Windows ARM64 builds (newer ARM Linux needs glibc 2.39; until then use the pip install); only if someone asks
+- [ ] `useful` Zoomable preview with a ruler/grid overlay
+- [ ] `fun` `big` Webcam capture: take a photo and print it (`getUserMedia`)
+- [ ] `polish` Accessibility pass: name the remaining controls, try Orca and NVDA, and show a checkbox's state with a tick as well as colour
+- [ ] `polish` A keyboard-shortcuts window (Ctrl+?)
 
 **Needs hardware or research first**
-- [ ] `research` Hardware testing on Windows and macOS (CI builds them, but they are untested with a printer). Testers wanted.
-- [ ] `useful` `research` Windows printing through the spooler, so no Zadig/WinUSB driver is needed (needs a Windows machine to test)
-- [ ] `big` One web UI for every client (in progress on the `web-ui` branch): the existing Python engine runs in the browser through Pyodide, prints over Web Bluetooth from Chrome on Android (tested), and the desktop app becomes a shell around the same page. No Firefox or iOS for printing. Only a text, font, effect and border slice exists so far
-
-## Building releases
-
-`python packaging/build.py` builds for the OS it runs on (PyInstaller does not cross-compile).
-Bump `__version__` in `src/t003gui/__init__.py` first (the About box, `--version` and the package metadata all read it).
-`.github/workflows/release.yml` builds Linux, Windows and macOS on tag push (`git tag v0.2.1 && git push --tags`; the tag must match `__version__`),
-self-tests each, and attaches them to a GitHub release with checksums.
+- [ ] `research` Printing from iOS through a Web Bluetooth browser such as Bluefy
+- [ ] `research` Linux in the browser: the BlueZ problem may go away with `ControllerMode = le` in `/etc/bluetooth/main.conf`
+- [ ] `research` Other cheap Bluetooth thermal printers (the page's printer code is mostly TSPL plus a few UUIDs)
 
 ## Licence
 
 MIT for the code (see [LICENSE](LICENSE)). The bundled fonts keep their own licences, mostly the SIL Open Font
-License; all texts are in `src/t003gui/fonts/LICENSES/`.
+License; all texts are in `src/dotlab/fonts/LICENSES/`.

@@ -7,13 +7,13 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-PACKAGE = ROOT / "src" / "t003gui"
+PACKAGE = ROOT / "src" / "dotlab"
 
 
 def _package_data_patterns() -> list[str]:
     text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    match = re.search(r"\[tool\.setuptools\.package-data\]\s*t003gui\s*=\s*(\[.*?\])", text, re.S)
-    assert match, "pyproject.toml has no package-data for t003gui"
+    match = re.search(r"\[tool\.setuptools\.package-data\]\s*dotlab\s*=\s*(\[.*?\])", text, re.S)
+    assert match, "pyproject.toml has no package-data for dotlab"
     return ast.literal_eval(match.group(1))
 
 
@@ -36,7 +36,7 @@ def _run_core_only(code: str) -> subprocess.CompletedProcess:
 def test_core_and_cli_work_without_the_window_extras(tmp_path):
     out = tmp_path / "label.png"
     result = _run_core_only(
-        "from t003gui import cli, core, composition, presets, imaging; "
+        "from dotlab import cli, core, composition, presets, imaging; "
         f"cli.main(['Hello', '--preview', {str(out)!r}]); "
         "print('ok')"
     )

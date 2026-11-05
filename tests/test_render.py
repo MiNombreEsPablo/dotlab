@@ -3,7 +3,7 @@ import itertools
 import pytest
 from PIL import Image
 
-from t003gui import core
+from dotlab import core
 
 
 def _inked(img):
@@ -80,7 +80,7 @@ def _line_tops(mask):
 def test_stroked_effects_stay_registered_on_every_line():
     # outline/3d/neon draw a thickened copy and a plain copy; if their line pitch differs the effect only looks
     # right on line one (Pillow's multiline_text adds 2*stroke_width per line)
-    from t003gui import render
+    from dotlab import render
 
     fs = render._FontSet(render.font_path("DejaVu Sans", True)[0], 40, True)
     probe = render.ImageDraw.Draw(Image.new("L", (1, 1)))
