@@ -108,6 +108,7 @@ export function createDoodleWidget(options) {
     }
 
     const undo = el("button", { type: "button", className: "gel" }, "Undo");
+    const redo = el("button", { type: "button", className: "gel" }, "Redo");
     const clear = el("button", { type: "button", className: "gel" }, "Clear");
     const row = (label, control, className = "") => el("div", { className: `field ${className}` }, el("span", { className: "row-title" }, label), control);
     const rows = {
@@ -118,7 +119,7 @@ export function createDoodleWidget(options) {
     };
     const root = el("div", { className: "doodle-tools" },
       row("Tool", tool), rows.ink, rows.brush, rows.sticker, rows.size,
-      el("div", { className: "reset-row buttons" }, undo, clear),
+      el("div", { className: "reset-row buttons" }, undo, redo, clear),
       el("p", { className: "needs-hint doodle-hint" }, "Draw on the preview."));
 
     function syncTool() {
@@ -130,6 +131,7 @@ export function createDoodleWidget(options) {
     }
     function syncButtons() {
       undo.disabled = !doodle.canUndo();
+      redo.disabled = !doodle.canRedo();
       clear.disabled = doodle.isEmpty();
     }
     function changed() {
@@ -141,6 +143,7 @@ export function createDoodleWidget(options) {
     tool.addEventListener("input", syncTool);
     ink.addEventListener("input", () => { doodle.ink = ink.value; });
     undo.addEventListener("click", () => { if (doodle.undo()) changed(); });
+    redo.addEventListener("click", () => { if (doodle.redo()) changed(); });
     clear.addEventListener("click", () => { if (doodle.clear()) changed(); });
     syncTool();
     syncButtons();
@@ -176,9 +179,12 @@ export function createDoodleWidget(options) {
     overlay.addEventListener("pointerleave", () => { doodle.leave(); redraw(); });
     addEventListener("keydown", (event) => {
       const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(event.target.tagName) && event.target.type !== "range";
-      if (active && !typing && (event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === "z") {
-        event.preventDefault();
-        if (doodle.undo()) changed();
+      if (active && !typing && (event.ctrlKey || event.metaKey)) {
+        const key = event.key.toLowerCase();
+        if (key === "z" || key === "y") {
+          event.preventDefault();
+          if (key === "y" || event.shiftKey ? doodle.redo() : doodle.undo()) changed();
+        }
       }
     });
 

@@ -187,6 +187,23 @@ test("undo goes back stroke by stroke, 30 deep, and clear can be undone", () => 
   assert.equal(make().clear(), false, "clearing nothing is not a change");
 });
 
+test("redo replays undone strokes, and a new stroke drops the redo history", () => {
+  const d = make();
+  d.brush = 1;
+  for (let i = 0; i < 3; i++) stroke(d, "pen", [[10 + i * 3, 10]]);
+  assert.equal(d.canRedo(), false);
+  d.undo(); d.undo();
+  assert.equal(count(d), 1);
+  assert.equal(d.redo(), true);
+  assert.equal(count(d), 2);
+  assert.equal(d.redo(), true);
+  assert.equal(count(d), 3);
+  assert.equal(d.redo(), false);
+  d.undo();
+  stroke(d, "pen", [[50, 50]]);
+  assert.equal(d.canRedo(), false, "drawing again forgets what was undone");
+});
+
 test("drawing at and past the edges never throws and stays on the label", () => {
   const d = make();
   d.brush = 24;
