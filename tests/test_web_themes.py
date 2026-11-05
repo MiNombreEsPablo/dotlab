@@ -9,15 +9,13 @@ STYLE_CSS = (WEB / "style.css").read_text(encoding="utf-8")
 
 
 def _blocks() -> dict[str, set[str]]:
-    """{look: the custom properties its block defines}; the System look's dark variant is 'system-dark'."""
+    """{look: the custom properties its block defines}."""
     blocks, current = {}, None
     for line in THEMES_CSS.splitlines():
         start = re.match(r'\s*:root[^{]*\{\s*$', line)
         if start:
             named = re.search(r'data-theme="([a-z0-9-]+)"', line)
             name = named.group(1) if named else "y2k-blue"
-            if name == "system" and line.startswith("  "):  # inside the @media (prefers-color-scheme: dark) block
-                name = "system-dark"
             current = blocks.setdefault(name, set())
         elif current is not None and re.match(r"\s*}\s*$", line):
             current = None
@@ -29,7 +27,7 @@ def _blocks() -> dict[str, set[str]]:
 
 
 def test_every_look_is_there():
-    assert set(_blocks()) == {"y2k-blue", "y2k-pink", "gunmetal", "handheld", "system", "system-dark"}
+    assert set(_blocks()) == {"y2k-blue", "y2k-pink", "gunmetal", "handheld", "system"}
 
 
 def test_the_looks_that_stand_alone_define_every_token_so_nothing_leaks_in_from_the_candy_plastic():
@@ -39,10 +37,9 @@ def test_the_looks_that_stand_alone_define_every_token_so_nothing_leaks_in_from_
         assert not missing, f"{look} leaves {sorted(missing)} to be inherited from Y2K Blue"
 
 
-def test_pink_and_the_dark_system_look_only_override_tokens_that_exist():
+def test_pink_only_override_tokens_that_exist():
     blocks = _blocks()
     assert blocks["y2k-pink"] <= blocks["y2k-blue"], sorted(blocks["y2k-pink"] - blocks["y2k-blue"])
-    assert blocks["system-dark"] <= blocks["system"], sorted(blocks["system-dark"] - blocks["system"])
 
 
 def test_the_stylesheet_only_uses_tokens_that_are_defined():
@@ -62,7 +59,7 @@ def test_no_colour_is_written_in_a_rule():
 def test_the_picker_lists_exactly_the_looks_there_are():
     keys = re.findall(r'\["([a-z0-9-]+)", "[^"]+"\]', (WEB / "themes.js").read_text(encoding="utf-8").split("export const DEFAULT_THEME")[0])
     assert keys == ["y2k-blue", "y2k-pink", "gunmetal", "handheld", "system"]
-    assert set(keys) == set(_blocks()) - {"system-dark"}
+    assert set(keys) == set(_blocks())
 
 
 def test_the_page_loads_the_themes_and_restores_the_saved_look_before_painting():
@@ -81,3 +78,9 @@ def test_the_fonts_the_looks_name_are_bundled_and_served():
     fonts = set(module.manifest()["fonts"])
     for name in re.findall(r'src: url\("fonts/([^"]+)"\)', THEMES_CSS):
         assert name.replace("%5B", "[").replace("%5D", "]") in fonts, name
+
+
+def test_no_look_follows_the_operating_systems_dark_mode():
+    """The page looks the same everywhere; only the user's own choice of look changes it."""
+    assert "prefers-color-scheme" not in THEMES_CSS and "prefers-color-scheme" not in STYLE_CSS
+    assert "light dark" not in THEMES_CSS

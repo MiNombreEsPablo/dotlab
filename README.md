@@ -53,12 +53,12 @@ seconds (fonts load as you use them), and nothing you make leaves your device. A
   (Bayer) crosshatch or hard-cutoff dithering; brightness, contrast, gamma, pixelate, mirror, flip and invert.
   Transparent PNGs print on white and phone photos keep their orientation.
 - **Doodle:** freehand ink on the label with brushes, spray, shapes, fill and 24×24 stickers.
-- **Remembers your work:** the label you were designing is back when you reopen the page (its picture isn't kept: *Save label* keeps pictures). *File → New label* starts over.
-- **Save and share:** *Save label* writes the label as a normal 1-bit **PNG** with the whole design stored inside it. Any
+- **Remembers your work:** the label you were designing is back when you reopen the page (its picture isn't kept: *Save* keeps pictures). *File → New label* starts over.
+- **Save and share:** *Save* writes the label as a normal 1-bit **PNG** with the whole design stored inside it. Any
   image viewer or editor opens it as a picture; Dotlab opens it again for editing (*Open label*, or drop it on the
-  page). *Save image* writes a plain PNG at printed size or enlarged 4×; *Copy image* puts it on the clipboard.
-- Looks: Y2K candy plastic in blue or pink, gunmetal with LCD-green text, a four-shade olive "handheld" look, or the plain
-  system look.
+  page). *Copy image* puts the label on the clipboard, at printed size or enlarged 4×.
+- Looks: Y2K candy plastic in blue or pink, gunmetal with LCD-green text, a four-shade olive "handheld" look, or a plain, light
+  look that ignores your OS theme.
 
 ## How it works
 

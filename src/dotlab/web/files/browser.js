@@ -4,7 +4,7 @@
 
 export async function copyImage(bytes) {
   if (!navigator.clipboard || !window.ClipboardItem) {
-    throw new Error("This browser can't copy images to the clipboard: use Save image instead.");
+    throw new Error("This browser can't copy images to the clipboard: use Save instead.");
   }
   try {
     await navigator.clipboard.write([new ClipboardItem({ "image/png": new Blob([bytes], { type: "image/png" }) })]);

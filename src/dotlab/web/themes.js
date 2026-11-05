@@ -6,7 +6,7 @@ export const THEMES = [
   ["y2k-pink", "Y2K Pink"],
   ["gunmetal", "Gunmetal"],
   ["handheld", "Handheld"],
-  ["system", "System"],
+  ["system", "Plain"],
 ];
 export const DEFAULT_THEME = THEMES[0][0];
 

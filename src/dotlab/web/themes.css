@@ -328,9 +328,9 @@
   --r-bezel: 10px;
 }
 
-/* ---- System: no custom look; flat, and light or dark as the operating system says ------------------------------------ */
+/* ---- Plain: no custom look; flat and light, the same on every system (it deliberately ignores the OS dark mode) ------- */
 :root[data-theme="system"] {
-  color-scheme: light dark;
+  color-scheme: light;
   --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-size: 14px;
   --text: #14213d;
@@ -415,57 +415,4 @@
   --r-tab: 6px;
   --r-title: 6px;
   --r-bezel: 8px;
-}
-@media (prefers-color-scheme: dark) {
-  :root[data-theme="system"] {
-    --text: #e8ecf8;
-    --raised: #34406a;
-    --inset: #34406a;
-    --window: #12182b;
-    --window-bottom: #12182b;
-    --panel: #1b2340;
-    --btn: #26305a;
-    --btn-hot: #2f3b6b;
-    --btn-down: #1b2340;
-    --btn-off: #1a2140;
-    --hover-border: #7aa2ff;
-    --dis-text: #6c789a;
-    --placeholder: #98a3c4;
-    --dis-border: #2a3358;
-    --default-bg: #7aa2ff;
-    --default-bg-down: #5d84e6;
-    --default-text: #0d1426;
-    --default-border: #5d84e6;
-    --default-hover: #a9c3ff;
-    --default-dis-text: #6c789a;
-    --default-dis-border: #2a3358;
-    --input-bg: #1b2340;
-    --input-text: #e8ecf8;
-    --input-dis-bg: #151b33;
-    --focus: #7aa2ff;
-    --focus-border: #7aa2ff;
-    --select-bg: #7aa2ff;
-    --select-text: #0d1426;
-    --select-arrow: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8'><path d='M1 1l5 5 5-5' fill='none' stroke='%23e8ecf8' stroke-width='2.2'/></svg>");
-    --slider-fill: #7aa2ff;
-    --slider-handle: #e8ecf8;
-    --tab-unselected: #9aa6c6;
-    --tab-selected: #1b2340;
-    --tab-accent: #7aa2ff;
-    --led-on: #7aa2ff;
-    --led-off: #12182b;
-    --led-on-border: #a9c3ff;
-    --led-dis: #1a2140;
-    --bezel: #1b2340;
-    --bezel-border: #34406a;
-    --screen-border: #34406a;
-    --status: #6fd08c;
-    --error: #ff8a80;
-    --tip-bg: #2a3358;
-    --tip-text: #e8ecf8;
-    --tip-border: #7aa2ff;
-    --banner: #1b2340;
-    --banner-outline: #34406a;
-    --banner-color: #e8ecf8;
-  }
 }
