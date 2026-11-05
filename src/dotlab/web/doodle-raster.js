@@ -1,5 +1,5 @@
 // The doodle's drawing engine: pure functions on a bit grid (one byte per dot, 1 = ink), no DOM, so Node can test it.
-// It is the web counterpart of the Qt app's DoodleCanvas: the same tools, hard-edged strokes (the printer is 1-bit),
+// The doodle's tools: hard-edged strokes (the printer is 1-bit),
 // dither-pattern inks anchored to the label, a bucket that stops at ink and at the label's own dark pixels, stickers as
 // stamps, and undo. What it paints is the doodle: doodle.py decodes it, the engine draws it over everything.
 //
@@ -266,7 +266,7 @@ export class Doodle {
   }
 
   leave() { this._hover = null; }
-  cancel() { // a stroke that was interrupted: keep what was drawn, as the Qt canvas does when the button is released
+  cancel() { // a stroke that was interrupted: keep what was drawn, as when the button is released
     this._start = this._last = this._now = null;
   }
 

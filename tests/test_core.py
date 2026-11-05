@@ -77,7 +77,7 @@ def test_version_is_single_sourced():
     import dotlab
 
     text = (Path(__file__).parent.parent / "pyproject.toml").read_text(encoding="utf-8")
-    assert re.fullmatch(r"\d+\.\d+\.\d+(rc\d+)?", dotlab.__version__)  # rcN: a pre-release (the release workflow marks it so)
+    assert re.fullmatch(r"\d+\.\d+\.\d+(rc\d+)?", dotlab.__version__)
     project = text.split("[project]", 1)[1].split("\n[", 1)[0]
     assert 'dynamic = ["version"]' in project and not re.search(r"^version\s*=", project, re.M)
     assert 'version = {attr = "dotlab.__version__"}' in text

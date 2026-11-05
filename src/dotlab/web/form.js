@@ -16,7 +16,7 @@ const decimals = (step) => (String(step).split(".")[1] || "").length;
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 
 // A slider and its number box. Log sliders spread a range like 0.3-3 evenly around `neutral` (two log scales meeting at
-// the middle, as the Qt app does), so "no change" sits at the centre of the track like the zero of a symmetric slider.
+// the middle), so "no change" sits at the centre of the track like the zero of a symmetric slider.
 export function makeSlider(field, startValue, notify) {
   const { minimum: min, maximum: max, step } = field;
   const places = decimals(step);
@@ -46,7 +46,7 @@ export function makeSlider(field, startValue, notify) {
   function show() {
     range.value = position(toInt(value));
     range.style.setProperty("--fill", `${(range.value / range.max) * 100}%`);
-    box.value = field.zero_label && value === 0 ? "" : value.toFixed(places); // "1.0", as Qt shows it
+    box.value = field.zero_label && value === 0 ? "" : value.toFixed(places); // "1.0"
   }
   function set(v) {
     value = clamp(fromInt(toInt(v)), min, max);

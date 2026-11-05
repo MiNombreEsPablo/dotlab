@@ -1,4 +1,4 @@
-"""Our own pixel stickers: 24x24 1-bit icons drawn in code (no image files to ship), enlarged with nearest-neighbour. Qt-free.
+"""Our own pixel stickers: 24x24 1-bit icons drawn in code (no image files to ship), enlarged with nearest-neighbour.
 
 They are stamped into the doodle ink, so a sticker is just part of the drawing.
 """
