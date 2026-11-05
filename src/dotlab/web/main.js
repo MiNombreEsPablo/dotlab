@@ -10,6 +10,7 @@ import { buildForm } from "./form.js";
 import { createImageWidget } from "./image.js";
 import { createDoodleWidget } from "./doodle.js";
 import { createMenubar } from "./menus.js";
+import { previewFonts } from "./fontpreview.js";
 import { applyTheme, DEFAULT_THEME, previewColors, THEMES } from "./themes.js";
 
 const $ = (id) => document.getElementById(id);
@@ -79,6 +80,7 @@ async function main() {
         if (activeTab === "doodle") doodle.setUnderlay(pixels);
         $("hint").textContent = hints.join(" ");
         $("hint").hidden = hints.length === 0;
+        $("empty").hidden = activeTab === "doodle" || hasContent(spec()) || !!spec().doodle;
       } while (again);
       if ($("status").classList.contains("error")) status("");
     } catch (e) {
@@ -122,6 +124,7 @@ async function main() {
     doodle.setActive(id === "doodle");
     if (wasDrawing || id === "doodle") refresh(); // the doodle moves between the engine's picture and the overlay
   });
+  previewFonts(form.tabs.querySelector("#f-font"), options.fonts);
 
   const pictureIn = (transfer) => Array.from((transfer && transfer.files) || []).find((f) => f.type.startsWith("image/"));
   addEventListener("dragover", (event) => {
@@ -190,7 +193,7 @@ async function main() {
   for (const [scale, name] of options.export.scales) $("export-size").append(new Option(name, scale));
   $("export-size").value = await store.get("exportScale", options.export.scales[0][0]);
   $("export-size").addEventListener("input", () => store.set("exportScale", Number($("export-size").value)));
-  async function makeImage(doing) {
+  async function makeImage(doing) { // (for the clipboard: Save keeps the editable label file)
     const current = spec();
     if (!hasContent(current)) {
       status(`Nothing to ${doing}.`);
@@ -198,28 +201,16 @@ async function main() {
     }
     return engine.exportPng(current, Number($("export-size").value));
   }
-  async function saveImage() {
-    try {
-      const image = await makeImage("save");
-      if (!image) return;
-      const result = await files.save(image.data, image.name, "image/png", "PNG image");
-      if (result.error) status(result.error, true);
-      else if (!result.cancelled) status(`Saved ${result.saved}.`);
-    } catch (e) {
-      status(`Couldn't save the image: ${e.message}`, true);
-    }
-  }
   async function copyImage() {
     try {
       const image = await makeImage("copy");
       if (!image) return;
       await files.copyImage(image.data);
-      status("Copied the label to the clipboard.");
+      status("Copied. Paste it anywhere.");
     } catch (e) {
       status(`Couldn't copy the image: ${e.message}`, true);
     }
   }
-  $("save-image").addEventListener("click", saveImage);
   $("copy-image").addEventListener("click", copyImage);
 
   // presets: named styles (the label without its picture); choosing one replaces the label
@@ -275,7 +266,7 @@ async function main() {
       const saved = await presets.save($("preset-name").value, spec());
       closeNameForm();
       await reloadPresets(saved);
-      status(`Saved preset “${saved}”.${spec().image_path ? " (A preset keeps the style, not the picture: Save label… keeps both.)" : ""}`);
+      status(`Saved preset “${saved}”.${spec().image_path ? " (A preset keeps the style, not the picture: Save… keeps both.)" : ""}`);
     } catch (e) {
       status(`Couldn't save the preset: ${e.message}`, true);
     }
@@ -345,13 +336,13 @@ async function main() {
     const result = await printer.print(current, { mode: $("mode").value });
     $("print").disabled = false;
     if (result.error) status(result.error, true);
-    else status(result.problems.length ? `Printer: ${result.problems.join(", ")}` : "Sent.");
+    else status(result.problems.length ? `Printer: ${result.problems.join(", ")}` : "Sent. Your sticker is on its way.");
   }
   $("print").addEventListener("click", print);
   $("print").disabled = false;
 
   async function newLabel() {
-    if (hasContent(spec()) && !confirm("Start a new label? The current one is replaced: use Save label first to keep it.")) return;
+    if (hasContent(spec()) && !confirm("Start a new label? The current one is replaced: use Save first to keep it.")) return;
     form.write({}); // every control back to its default, the picture and the doodle included
     $("preset").value = "";
     resetDelete();
@@ -387,9 +378,8 @@ async function main() {
     { label: "File", items: [
       { label: "New label", run: newLabel },  // (no shortcut: browsers keep Ctrl+N for a new window)
       { label: "Open label…", shortcut: "Ctrl+O", run: () => $("label-file").click() },
-      { label: "Save label…", shortcut: "Ctrl+S", run: saveLabel },
+      { label: "Save…", shortcut: "Ctrl+S", run: saveLabel },  // a PNG any viewer opens, which Dotlab can also reopen and edit
       "-",
-      { label: "Save image…", shortcut: "Ctrl+E", run: saveImage },  // (always on: with nothing to save, the action says so)
       { label: "Print", shortcut: "Ctrl+P", run: print, enabled: () => !$("print").disabled },
     ] },
     { label: "Edit", items: [
@@ -413,7 +403,7 @@ async function main() {
   if (kept && kept.spec) {
     try {
       form.write(kept.spec);
-      if (kept.hadPicture) status("Restored your last label. Its picture isn't kept: add it again, or use Save label, which keeps pictures.");
+      if (kept.hadPicture) status("Restored your last label. Its picture isn't kept: add it again, or use Save, which keeps pictures.");
     } catch (_) { /* a label from an older version that doesn't fit: start fresh */ }
   }
   await refresh();
