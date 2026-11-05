@@ -147,6 +147,7 @@ body {
   border-color: var(--raised);
   border-radius: var(--r-pane);
   border-top-left-radius: 0;
+  border-top-right-radius: 0; /* the tabs run the full width: a rounded corner here leaves a notch under the last one */
 }
 
 /* fields */

@@ -10,6 +10,7 @@ import { buildForm } from "./form.js";
 import { createImageWidget } from "./image.js";
 import { createDoodleWidget } from "./doodle.js";
 import { createMenubar } from "./menus.js";
+import { previewFonts } from "./fontpreview.js";
 import { applyTheme, DEFAULT_THEME, previewColors, THEMES } from "./themes.js";
 
 const $ = (id) => document.getElementById(id);
@@ -123,6 +124,7 @@ async function main() {
     doodle.setActive(id === "doodle");
     if (wasDrawing || id === "doodle") refresh(); // the doodle moves between the engine's picture and the overlay
   });
+  previewFonts(form.tabs.querySelector("#f-font"), options.fonts);
 
   const pictureIn = (transfer) => Array.from((transfer && transfer.files) || []).find((f) => f.type.startsWith("image/"));
   addEventListener("dragover", (event) => {
