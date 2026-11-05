@@ -36,7 +36,7 @@ story on every system. In the browser that means Web Bluetooth (BLE), or on desk
 
 Designing works in every modern browser; only the Print button needs Web Bluetooth or Web Serial. The page runs the label engine
 (Python, via [Pyodide](https://pyodide.org)) in your browser: the first visit downloads the engine and takes a few
-seconds (fonts load as you use them), and nothing you make leaves your device.
+seconds (fonts load as you use them), and nothing you make leaves your device. A service worker keeps the runtime, so repeat visits start faster and the page loads without a network.
 
 ## Features
 
@@ -84,7 +84,6 @@ work to build and to keep working).
 
 **Next**
 - [ ] `research` Check Print from Chrome/Edge on real Windows and macOS machines, and fix what turns up. Testers wanted.
-- [ ] `useful` The first visit is slow (Pyodide): cache the engine, fonts and wheel so repeat visits are instant and offline
 - [ ] `useful` New label (Ctrl+N), Open Recent, and the last label restored when the page opens
 - [ ] `fun` More stickers (the Doodle tab has 12 so far), and a sticker that can be moved or resized after it is placed
 - [ ] `fun` Poster mode: split one large image across several stickers, with alignment marks

@@ -60,6 +60,13 @@ def test_the_site_has_only_what_the_browser_needs(site):
     assert not any("__pycache__" in p.parts or "node_modules" in p.parts for p in out.rglob("*"))
 
 
+def test_the_service_worker_ships_and_the_page_registers_it(site):
+    out, _, _ = site
+    worker = (out / "sw.js").read_text(encoding="utf-8")
+    assert "cacheFirst" in worker and "networkFirst" in worker
+    assert 'register("sw.js")' in (out / "index.html").read_text(encoding="utf-8")  # relative: the site is under a path
+
+
 def test_the_site_never_refers_to_the_root_of_the_server(site):
     """A project site lives under /dotlab/, so a URL that starts with a slash would leave it."""
     out, _, _ = site
