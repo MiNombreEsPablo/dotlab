@@ -1,3 +1,3 @@
-"""Dotlab: a web label designer and CLI for cheap thermal label printers (first target: the ORGBRO T003)."""
+"""Dotlab: a web label designer for cheap thermal label printers (first target: the ORGBRO T003)."""
 
-__version__ = "0.5.0rc4"  # the single source of truth: pyproject.toml reads it, and frozen builds have no package metadata
+__version__ = "0.6.0"  # the single source of truth: pyproject.toml reads it, the About box shows it

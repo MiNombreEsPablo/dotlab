@@ -6,7 +6,6 @@ tests/test_form.py until it is described here (or listed in `PENDING`, the contr
 
 Not described here: the printer. The picture chooser and the doodle are fields of kind "image" and "doodle": the
 schema places them, the client draws them (the doodle's tools are described by `doodle.describe()`).
-No Qt in here.
 """
 from __future__ import annotations
 

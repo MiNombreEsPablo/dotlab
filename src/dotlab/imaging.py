@@ -1,4 +1,4 @@
-"""Turn a picture file into the grayscale (or already 1-bit) image that gets pasted on the label. Qt-free.
+"""Turn a picture file into the grayscale (or already 1-bit) image that gets pasted on the label.
 
 Order: load (transparency over white, EXIF rotation) -> fit -> tone (gamma, brightness, contrast) -> dither.
 The default dither, Floyd-Steinberg, is left to `to_bitmap` (which dithers the whole label); the other modes produce

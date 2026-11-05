@@ -203,7 +203,7 @@ async function main() {
   $("save-image").addEventListener("click", saveImage);
   $("copy-image").addEventListener("click", copyImage);
 
-  // presets: named styles (the label without its picture); choosing one replaces the label, as in the Qt app
+  // presets: named styles (the label without its picture); choosing one replaces the label
   const NO_PRESET = "— presets —";
   async function reloadPresets(select = "") {
     const names = await presets.list();

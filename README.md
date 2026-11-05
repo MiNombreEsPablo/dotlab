@@ -1,4 +1,4 @@
-<p align="center"><img src="packaging/icons/dotlab-128.png" alt="Dotlab icon" width="96"></p>
+<p align="center"><img src="src/dotlab/assets/icon-256.png" alt="Dotlab icon" width="96"></p>
 
 # Dotlab
 
