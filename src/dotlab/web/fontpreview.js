@@ -20,6 +20,8 @@ export function previewFonts(select, fonts) {
       return `@font-face { font-family: "${name(f.family)}"; src: url("fonts/${encodeURIComponent(file)}") format("truetype"); font-weight: 100 900; font-display: swap; }`;
     }).join("\n");
     document.head.append(style);
+    // A face is fetched only when something uses it, and the open list draws late and never repaints, so ask now.
+    for (const f of fonts) document.fonts.load(`16px ${css(f.family)}`, f.family).catch(() => {});
   };
-  for (const type of ["pointerdown", "focus", "keydown"]) select.addEventListener(type, declare, { once: true });
+  for (const type of ["pointerenter", "pointerdown", "focus", "keydown"]) select.addEventListener(type, declare, { once: true });
 }
