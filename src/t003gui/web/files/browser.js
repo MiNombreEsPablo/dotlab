@@ -1,7 +1,6 @@
 // Files seam, browser adapter: a file the page made is offered as a download; an image goes to the clipboard through the
 // browser's own clipboard.   save(bytes, name, mime, kind) -> {saved, cancelled?, error?}   copyImage(pngBytes) -> void (throws)
 // (`kind` words the file type in a dialog, "PNG image"; a download has no dialog)
-// The desktop adapter reuses copyImage.
 
 export async function copyImage(bytes) {
   if (!navigator.clipboard || !window.ClipboardItem) {

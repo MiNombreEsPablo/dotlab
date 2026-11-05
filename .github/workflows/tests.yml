@@ -30,30 +30,6 @@ jobs:
       - run: python -m pip install -e ".[dev]"
       - run: python -m pytest -q
 
-  # The command-line tool must work with only the core dependencies (Raspberry Pi, servers, BSD, old distros): no window
-  # toolkit installed, and nothing quietly needing one.
-  core-only:
-    name: Core dependencies only (Python 3.9)
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
-        with:
-          python-version: "3.9"
-      - run: python -m pip install -e . pytest
-      - name: pywebview really is absent
-        run: python -c "import importlib.util, sys; sys.exit(importlib.util.find_spec('webview') is not None)"
-      - run: python -m pytest -q -rs
-      - name: The CLI works
-        run: |
-          t003-print "Hello" --qr https://example.com --preview label.png
-          t003-print --version
-      - name: The window explains what to install
-        run: |
-          if t003-gui 2> err.txt; then echo "t003-gui should fail without pywebview"; exit 1; fi
-          cat err.txt
-          grep -q "pip install 't003-label-gui\[web\]'" err.txt
-
   # The oldest versions we claim to support, so the lower bounds in pyproject.toml are tested, not guessed.
   minimum-versions:
     name: Oldest supported libraries (Python 3.10)
@@ -95,7 +71,7 @@ jobs:
           /tmp/clean/bin/pip install "$(ls dist/*.whl)"
           cd /tmp
           /tmp/clean/bin/t003-print --version
-          /tmp/clean/bin/t003-gui --selftest
+          /tmp/clean/bin/t003-print "Hello" --qr https://example.com --preview /tmp/label.png
 
   # The web app runs the very same Python in the browser (Pyodide). Render a fixed set of labels in Pyodide and natively
   # and compare the dots, so the two engines can't drift apart unnoticed. Also runs the Node tests of the doodle engine

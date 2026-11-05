@@ -1,4 +1,4 @@
-// Engine seam, browser adapter: the same calls as the desktop bridge, answered by Pyodide in a worker.
+// Engine seam, browser adapter: the engine in the browser, answered by Pyodide in a worker.
 //   init(onProgress)  options() -> object  preview(spec) -> {pixels: Uint8Array(W*H gray), hints: string[]}
 //   tspl(spec) -> Uint8Array   addImage(bytes, name) -> path   exportPng(spec, scale) -> {data, name}
 //   statusProblems(byte) -> string[]
@@ -36,7 +36,7 @@ export function createEngine(baseUrl) {
     preview: (spec) => call("preview", { spec: JSON.stringify(spec) }),
     // bytes of a picture the user chose -> the path to put in the label (rejects with a sentence if it isn't usable)
     addImage: (bytes, name) => call("addImage", { data: bytes, name }, [bytes.buffer]),
-    // a preset to keep (browser storage only; the desktop shell's bridge keeps its own): {name, spec}
+    // a preset to keep: {name, spec}
     presetEntry: async (name, spec) => JSON.parse(await call("presetEntry", { name, spec: JSON.stringify(spec) })),
     // the label as a .t003label file ({data: Uint8Array of its text, name}) and back (-> the label as an object)
     compositionDumps: (spec) => call("compositionDumps", { spec: JSON.stringify(spec) }),

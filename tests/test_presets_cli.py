@@ -4,6 +4,7 @@ import pytest
 from PIL import Image
 
 from t003gui import cli, core
+from t003gui.spec import LabelSpec
 from t003gui.presets import PresetStore
 
 
@@ -77,19 +78,18 @@ def test_a_preset_name_is_cleaned_or_refused_with_a_sentence():
             presets.clean_name(bad)
 
 
-def test_a_web_preset_is_a_plain_entry_the_cli_and_qt_can_read(tmp_path, monkeypatch):
+def test_a_web_preset_is_a_plain_entry_the_cli_can_read(tmp_path, monkeypatch):
     import json
 
     from t003gui import api, doodle
-    from t003gui.bridge import Bridge
 
     ink = Image.new("L", (core.W, core.SH), 0)
     ink.paste(255, (10, 10, 80, 30))
     store = PresetStore(tmp_path / "presets.json")
-    bridge = Bridge(presets=store)
     label = json.dumps({"text": "Fragile", "effect": "neon", "border": True, "border_style": "chamfer",
                         "image_path": "/tmp/somewhere/picture.png", "doodle": doodle.encode(ink)})
-    assert bridge.preset_save("  Fragile  stuff ", label) == {"saved": "Fragile stuff", "error": None}
+    entry = json.loads(api.preset_entry("  Fragile  stuff ", label))
+    store.save(entry["name"], LabelSpec(**entry["spec"]))
     kept = store.get("Fragile stuff")
     assert (kept.text, kept.effect, kept.border_style) == ("Fragile", "neon", "chamfer")
     assert kept.image_path == "" and kept.doodle  # a preset is a style: no picture; the doodle stays

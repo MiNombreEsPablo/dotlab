@@ -32,7 +32,7 @@ WEB = dev_server.WEB
 QRCODE_REQUIREMENT = "qrcode==8.2"
 QRCODE_WHEEL = "qrcode-8.2-py3-none-any.whl"
 QRCODE_SHA256 = "16e64e0716c14960108e85d853062c9e8bba5ca8252c0b4d0231b9df4060ff4f"
-NOT_SITE = {"dev_server.py", "desktop.py", "build_site.py", "test", "__pycache__", "node_modules", ".pytest_cache"}
+NOT_SITE = {"dev_server.py", "build_site.py", "test", "__pycache__", "node_modules", ".pytest_cache"}
 
 
 def verify_wheel(path: Path, sha256: str) -> None:
