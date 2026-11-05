@@ -46,18 +46,6 @@ def mark() -> None:
     image.save(str(ROOT / "src/t003gui/assets/icon-mark.png"))
 
 
-def arrows() -> None:
-    """Small navy chevrons for combo/spin-box buttons in the Y2K themes (anti-aliased via 4x supersampling)."""
-    from PIL import ImageDraw
-
-    for suffix, color in (("", (11, 42, 99, 255)), ("-plum", (90, 15, 61, 255)), ("-lcd", (0, 224, 0, 255)),
-                         ("-dmg", (15, 56, 15, 255))):  # Y2K Blue navy, Y2K Pink plum, Gunmetal LCD green, Handheld dark olive
-        for name, points in (("arrow-down", [(0, 0), (12, 0), (6, 7)]), ("arrow-up", [(0, 7), (12, 7), (6, 0)])):
-            big = Image.new("RGBA", (48, 32), (0, 0, 0, 0))
-            ImageDraw.Draw(big).polygon([(x * 4, y * 4 + 2) for x, y in points], fill=color)
-            big.resize((12, 8), Image.LANCZOS).save(ROOT / f"src/t003gui/assets/{name}{suffix}.png")
-
-
 def main() -> None:
     QGuiApplication(sys.argv)
     OUT.mkdir(parents=True, exist_ok=True)
@@ -68,8 +56,7 @@ def main() -> None:
     images[256].save(OUT / "t003-label-gui.ico", sizes=[(s, s) for s in (16, 24, 32, 48, 64, 128, 256)])
     images[512].save(OUT / "t003-label-gui.icns")
     mark()
-    arrows()
-    print("wrote", len(SIZES), "PNGs, .ico, .icns, arrows")
+    print("wrote", len(SIZES), "PNGs, .ico, .icns")
 
 
 if __name__ == "__main__":

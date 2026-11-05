@@ -7,7 +7,7 @@ name = "t003-label-gui"
 dynamic = ["version"]
 description = "Desktop GUI for printing to the ORGBRO T003 thermal label printer over raw USB (TSPL)"
 requires-python = ">=3.9"
-# The core and the CLI need no Qt, so they install anywhere Python runs; the window is the optional "gui" extra.
+# The core and the CLI need no window toolkit, so they install anywhere Python runs; the window is the optional "web" extra.
 dependencies = [
     "pillow>=9.1",
     "pyusb>=1.2.1",
@@ -25,8 +25,7 @@ dependencies = [
 # uses WebKitGTK if the system has it (webkit2gtk and PyGObject from the distro: small), else `web-qt` brings QtWebEngine.
 web = ["pywebview>=5.3"]
 web-qt = ["pywebview[pyside6]>=5.3"]
-gui = ["PySide6>=6.4"]  # 6.4 added QFormLayout.setRowVisible
-dev = ["pytest", "PySide6>=6.4"]
+dev = ["pytest"]
 
 [project.scripts]
 t003-gui = "t003gui.launcher:main"

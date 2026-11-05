@@ -88,9 +88,9 @@ def test_text_layout_is_pinned_to_basic():
     assert render._font(path, 24).layout_engine == ImageFont.Layout.BASIC
 
 
-def test_api_and_protocol_import_without_qt_or_usb():
+def test_api_and_protocol_import_without_usb():
     code = (
-        "import sys; sys.modules['PySide6'] = None; sys.modules['usb'] = None; sys.modules['libusb_package'] = None\n"
+        "import sys; sys.modules['usb'] = None; sys.modules['libusb_package'] = None\n"
         "from t003gui import api, protocol\n"
         "assert api.tspl_bytes({'text': 'x'}).startswith(b'SIZE ')\n"
         "print('ok')\n"
@@ -167,12 +167,6 @@ def test_files_are_named_after_the_label():
     assert api.file_stem({"text": "  Neon Nights!\nsecond line"}) == "Neon Nights"
     assert api.file_stem({"text": ""}) == "label" and api.file_stem({"text": "***"}) == "label"
     assert len(api.file_stem({"text": "x" * 100})) == 40
-
-
-def test_the_export_sizes_match_the_qt_window_for_now():
-    app = pytest.importorskip("t003gui.app")  # needs PySide6; goes away with the Qt UI
-    assert sorted(app.MainWindow.EXPORT_FORMATS.values()) == sorted(spec.EXPORT_SCALES)
-    assert set(app.MainWindow.EXPORT_FORMATS) == {f"{spec.export_size_label(s)} (*.png)" for s in spec.EXPORT_SCALES}
 
 
 # --- label files through the engine ------------------------------------------------------------------------------------

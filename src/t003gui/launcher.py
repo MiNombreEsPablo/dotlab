@@ -1,15 +1,10 @@
-"""The `t003-gui` command: open the web UI in a native window (the Qt window is the legacy one, `--qt`)."""
+"""The `t003-gui` command: open the web UI in a native window."""
 from __future__ import annotations
 
 import os
 import sys
 from pathlib import Path
 
-MISSING_QT = (
-    "The legacy Qt window needs PySide6, which isn't installed.\n"
-    "  pip install 't003-label-gui[gui]'\n"
-    "The command-line tool works without it: t003-print --help"
-)
 MISSING_WEBVIEW = (
     "The T003 Label Studio window needs pywebview, which isn't installed.\n"
     "  pip install 't003-label-gui[web]'      (Linux without WebKitGTK: 't003-label-gui[web-qt]')\n"
@@ -24,16 +19,6 @@ NO_TOOLKIT = (
 
 class ShellUnavailable(Exception):
     """The web window can't start here: pywebview or its window toolkit is missing."""
-
-
-def qt_window() -> None:
-    try:
-        from .app import main as run
-    except ImportError as e:
-        if (e.name or "").split(".")[0] != "PySide6":
-            raise  # a genuine bug, not the missing optional dependency
-        sys.exit(MISSING_QT)
-    run()
 
 
 def run_shell() -> None:
@@ -102,16 +87,8 @@ def shell_main() -> None:
 
 
 def main() -> None:
-    if "--qt" in sys.argv[1:]:
-        return qt_window()
-    if "--web" in sys.argv[1:]:  # what the flag said before the web window became the default
-        return web_shell()
-    try:
-        run_shell()
-    except ShellUnavailable as e:
-        try:  # an install that has only the old window still works, with a pointer to the new one
-            import PySide6  # noqa: F401
-        except ImportError:
-            sys.exit(str(e))
-        print("The web window isn't available here, opening the legacy Qt window instead.\n" + str(e), file=sys.stderr)
-        qt_window()
+    if "--selftest" in sys.argv:  # an installed copy checks itself: fonts, licences, assets, libusb, a render
+        from .selftest import run
+
+        sys.exit(run())
+    web_shell()  # `--web` (what the flag was called before the window became the default) is simply ignored

@@ -26,7 +26,7 @@ LABELS = {  # how a choice is worded when `value.capitalize()` isn't enough
 
 OUTPUT = "output"  # not a tab: shown next to the Print button, whatever tab is open
 
-# LabelSpec fields without a control in the schema yet. Each phase of docs/web-port.md moves some of them out.
+# LabelSpec fields without a control in the schema yet. 
 PENDING = frozenset()  # (the doodle was the last one)
 
 

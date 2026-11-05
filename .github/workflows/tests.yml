@@ -9,9 +9,6 @@ on:
 permissions:
   contents: read
 
-env:
-  QT_QPA_PLATFORM: offscreen
-
 jobs:
   test:
     name: Python ${{ matrix.python }}, ${{ matrix.os }}
@@ -29,17 +26,14 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
-      - name: Libraries for headless Qt
-        if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libdbus-1-3 libfontconfig1 libxcb-cursor0
       - run: python -m pip install --upgrade pip
       - run: python -m pip install -e ".[dev]"
       - run: python -m pytest -q
 
-  # The command-line tool must work with no Qt at all (Raspberry Pi, servers, BSD, old distros): install only the core
-  # dependencies and check that the window tests are skipped, not failing, and that nothing quietly needed PySide6.
-  without-qt:
-    name: No Qt installed (Python 3.9)
+  # The command-line tool must work with only the core dependencies (Raspberry Pi, servers, BSD, old distros): no window
+  # toolkit installed, and nothing quietly needing one.
+  core-only:
+    name: Core dependencies only (Python 3.9)
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v5
@@ -47,8 +41,8 @@ jobs:
         with:
           python-version: "3.9"
       - run: python -m pip install -e . pytest
-      - name: PySide6 really is absent
-        run: python -c "import importlib.util, sys; sys.exit(importlib.util.find_spec('PySide6') is not None)"
+      - name: pywebview really is absent
+        run: python -c "import importlib.util, sys; sys.exit(importlib.util.find_spec('webview') is not None)"
       - run: python -m pytest -q -rs
       - name: The CLI works
         run: |
@@ -56,11 +50,9 @@ jobs:
           t003-print --version
       - name: The window explains what to install
         run: |
-          if t003-gui 2> err.txt; then echo "t003-gui should fail without pywebview and PySide6"; exit 1; fi
+          if t003-gui 2> err.txt; then echo "t003-gui should fail without pywebview"; exit 1; fi
           cat err.txt
           grep -q "pip install 't003-label-gui\[web\]'" err.txt
-          if t003-gui --qt 2> err.txt; then echo "t003-gui --qt should fail without PySide6"; exit 1; fi
-          grep -q "pip install 't003-label-gui\[gui\]'" err.txt
 
   # The oldest versions we claim to support, so the lower bounds in pyproject.toml are tested, not guessed.
   minimum-versions:
@@ -71,10 +63,8 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.10"
-      - name: Libraries for headless Qt
-        run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libdbus-1-3 libfontconfig1 libxcb-cursor0
       - run: python -m pip install --upgrade pip
-      - run: python -m pip install "PySide6==6.5.3" "pillow==9.1.0" "pyusb==1.2.1" "qrcode==7.4" "fonttools==4.30.0" "libusb-package==1.0.30.0" pytest
+      - run: python -m pip install "pillow==9.1.0" "pyusb==1.2.1" "qrcode==7.4" "fonttools==4.30.0" "libusb-package==1.0.30.0" pytest
       - run: python -m pip install -e . --no-deps
       - run: python -m pytest -q
 
@@ -88,8 +78,6 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - name: Libraries for headless Qt
-        run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1 libxkbcommon0 libdbus-1-3 libfontconfig1 libxcb-cursor0
       - run: python -m pip install --upgrade pip build twine
       - run: python -m build
       - run: python -m twine check dist/*
@@ -98,13 +86,13 @@ jobs:
           python - <<'PY'
           import glob, tarfile
           names = tarfile.open(glob.glob("dist/*.tar.gz")[0]).getnames()
-          for needle in ("assets/icon.svg", "assets/arrow-down.png", "fonts/DejaVuSans-Bold.ttf", "LICENSES/LICENSE.dejavu"):
+          for needle in ("assets/icon.svg", "assets/icon-256.png", "fonts/DejaVuSans-Bold.ttf", "LICENSES/LICENSE.dejavu"):
               assert any(n.endswith(needle) for n in names), f"sdist is missing {needle}"
           PY
       - name: Install the wheel in a clean environment and self-test it
         run: |
           python -m venv /tmp/clean
-          /tmp/clean/bin/pip install "$(ls dist/*.whl)[gui]"
+          /tmp/clean/bin/pip install "$(ls dist/*.whl)"
           cd /tmp
           /tmp/clean/bin/t003-print --version
           /tmp/clean/bin/t003-gui --selftest
