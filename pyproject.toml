@@ -12,14 +12,10 @@ dependencies = [
     "pillow>=9.1",
     "qrcode>=7.4",
     "fonttools>=4.30",
-    "bleak>=0.22; sys_platform != 'linux'",  # Bluetooth (BLE) printing on Windows and macOS; Linux uses RFCOMM sockets
 ]
 
 [project.optional-dependencies]
 dev = ["pytest"]
-
-[project.scripts]
-dotlab-print = "dotlab.cli:main"
 
 [tool.setuptools.dynamic]
 version = {attr = "dotlab.__version__"}

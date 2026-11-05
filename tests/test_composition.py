@@ -4,7 +4,7 @@ import json
 import pytest
 from PIL import Image, PngImagePlugin
 
-from dotlab import cli, composition, core
+from dotlab import composition, core
 
 
 def _file(payload, key=composition.KEY) -> bytes:
@@ -113,17 +113,6 @@ def test_export_png_is_the_printed_sticker(tmp_path):
     assert a.tobytes() == expected.tobytes()
 
 
-def test_cli_loads_a_composition_and_flags_override_it(tmp_path):
-    saved = tmp_path / ("a" + composition.SUFFIX)
-    composition.save(saved, core.LabelSpec(text="from file", effect="outline"))
-    out = tmp_path / "p.png"
-    cli.main(["--file", str(saved), "--preview", str(out)])
-    expected = core.to_bitmap(core.render(core.LabelSpec(text="from file", effect="outline")))
-    assert Image.open(out).tobytes() == expected.tobytes()
-    with pytest.raises(SystemExit):
-        cli.main(["--file", str(tmp_path / ("missing" + composition.SUFFIX))])
-    with pytest.raises(SystemExit):
-        cli.main(["--file", str(saved), "--preset", "x"])
 
 
 def test_wrong_typed_fields_fall_back_to_their_defaults():

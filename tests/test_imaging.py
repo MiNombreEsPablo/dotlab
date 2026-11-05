@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-from dotlab import cli, core, imaging
+from dotlab import core, imaging
 
 
 def _save(tmp_path, img, name="in.png", **kw):
@@ -106,12 +106,6 @@ def test_exif_orientation_is_respected(tmp_path):
     assert out.size == (20, 40)  # turned upright
 
 
-def test_cli_image_options(tmp_path):
-    src = _save(tmp_path, _gradient())
-    out = tmp_path / "p.png"
-    cli.main(["--image", src, "--dither", "bayer8", "--contrast", "20", "--gamma", "1.4", "--preview", str(out)])
-    expected = core.to_bitmap(core.render(core.LabelSpec(image_path=src, dither="bayer8", contrast=20, gamma=1.4)))
-    assert Image.open(out).tobytes() == expected.tobytes()
 
 
 def _asym(tmp_path):
@@ -165,12 +159,6 @@ def test_pixelate_of_one_changes_nothing(tmp_path):
         imaging.process(core.LabelSpec(image_path=path)).tobytes()
 
 
-def test_cli_looks(tmp_path):
-    src = _asym(tmp_path)
-    out = tmp_path / "p.png"
-    cli.main(["--image", src, "--pixelate", "3", "--mirror", "--flip", "--invert", "--threshold", "100", "--preview", str(out)])
-    spec = core.LabelSpec(image_path=src, pixelate=3, mirror=True, flip=True, invert=True, threshold=100)
-    assert Image.open(out).tobytes() == core.to_bitmap(core.render(spec)).tobytes()
 
 
 def test_decoded_photo_is_cached_but_an_edited_file_is_read_again(tmp_path):

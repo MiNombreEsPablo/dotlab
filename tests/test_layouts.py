@@ -1,7 +1,7 @@
 import pytest
 from PIL import Image
 
-from dotlab import cli, core
+from dotlab import core
 
 MARGIN = core.MARGIN
 AX0, AX1, AY0, AY1 = MARGIN, core.W - MARGIN, MARGIN, core.SH - MARGIN  # usable area with no border or bars
@@ -99,9 +99,3 @@ def test_layouts_work_with_every_image_look(black):
         for layout in ("left", "top", "behind"):
             assert core.render(_spec(black, layout, **kw)).size == (core.W, core.H)
 
-
-def test_cli_layout_flags(tmp_path, black):
-    out = tmp_path / "p.png"
-    cli.main(["Mug", "--image", black, "--layout", "left", "--image-size", "30", "--preview", str(out)])
-    expected = core.to_bitmap(core.render(core.LabelSpec(text="Mug", image_path=black, image_layout="left", image_size=30)))
-    assert Image.open(out).tobytes() == expected.tobytes()
