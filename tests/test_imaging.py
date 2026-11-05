@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-from t003gui import cli, core, imaging
+from dotlab import cli, core, imaging
 
 
 def _save(tmp_path, img, name="in.png", **kw):

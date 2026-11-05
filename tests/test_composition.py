@@ -4,7 +4,7 @@ import json
 import pytest
 from PIL import Image, PngImagePlugin
 
-from t003gui import cli, composition, core
+from dotlab import cli, composition, core
 
 
 def _file(payload, key=composition.KEY) -> bytes:
@@ -142,7 +142,7 @@ def _browser_style_doodle(boxes):
 
     from PIL import Image
 
-    from t003gui.spec import SH, W
+    from dotlab.spec import SH, W
 
     canvas = Image.new("RGBA", (W, SH), (0, 0, 0, 255))
     for box in boxes:
@@ -153,7 +153,7 @@ def _browser_style_doodle(boxes):
 
 
 def test_saving_re_encodes_a_browsers_doodle_compactly_without_changing_it():
-    from t003gui import doodle
+    from dotlab import doodle
 
     bulky = _browser_style_doodle([(10, 10, 90, 40), (200, 100, 210, 180)])
     spec = core.LabelSpec(text="x", doodle=bulky)
@@ -164,7 +164,7 @@ def test_saving_re_encodes_a_browsers_doodle_compactly_without_changing_it():
 
 
 def test_canonical_is_idempotent_and_drops_what_is_not_a_doodle():
-    from t003gui import doodle
+    from dotlab import doodle
 
     once = doodle.canonical(_browser_style_doodle([(5, 5, 50, 50)]))
     assert once and doodle.canonical(once) == once

@@ -3,7 +3,7 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-WEB = ROOT / "src" / "t003gui" / "web"
+WEB = ROOT / "src" / "dotlab" / "web"
 THEMES_CSS = (WEB / "themes.css").read_text(encoding="utf-8")
 STYLE_CSS = (WEB / "style.css").read_text(encoding="utf-8")
 
@@ -69,7 +69,7 @@ def test_the_page_loads_the_themes_and_restores_the_saved_look_before_painting()
     html = (WEB / "index.html").read_text(encoding="utf-8")
     assert html.index("themes.css") < html.index("style.css")
     assert 'id="menubar"' in html and 'id="theme"' not in html  # the looks are in the View menu now
-    assert html.index("localStorage.getItem(\"t003:theme\")") < html.index("<body>")  # set before the first paint
+    assert html.index("localStorage.getItem(\"dotlab:theme\")") < html.index("<body>")  # set before the first paint
 
 
 def test_the_fonts_the_looks_name_are_bundled_and_served():

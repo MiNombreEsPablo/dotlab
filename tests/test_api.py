@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from PIL import Image, ImageFont
 
-from t003gui import api, core, fonts, protocol, render, spec
+from dotlab import api, core, fonts, protocol, render, spec
 
 ROOT = Path(__file__).resolve().parent.parent
 

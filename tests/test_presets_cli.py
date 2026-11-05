@@ -3,9 +3,9 @@ import json
 import pytest
 from PIL import Image
 
-from t003gui import cli, core
-from t003gui.spec import LabelSpec
-from t003gui.presets import PresetStore
+from dotlab import cli, core
+from dotlab.spec import LabelSpec
+from dotlab.presets import PresetStore
 
 
 def test_preset_roundtrip_and_delete(tmp_path):
@@ -48,7 +48,7 @@ def test_cli_reports_an_oversized_qr_instead_of_a_traceback(tmp_path):
 
 
 def test_a_saved_label_that_is_only_a_doodle_prints(tmp_path, monkeypatch):
-    from t003gui import composition, doodle
+    from dotlab import composition, doodle
 
     ink = Image.new("L", (core.W, core.SH), 0)
     ink.paste(255, (10, 10, 100, 30))
@@ -70,7 +70,7 @@ def test_an_empty_label_still_asks_for_something_to_print(monkeypatch):
 # --- presets saved by the web UI -----------------------------------------------------------------------------------------
 
 def test_a_preset_name_is_cleaned_or_refused_with_a_sentence():
-    from t003gui import presets
+    from dotlab import presets
 
     assert presets.clean_name("  Neon   Nights \n") == "Neon Nights"
     for bad, why in (("", "name"), ("   ", "name"), ("x" * 61, "60 characters")):
@@ -81,7 +81,7 @@ def test_a_preset_name_is_cleaned_or_refused_with_a_sentence():
 def test_a_web_preset_is_a_plain_entry_the_cli_can_read(tmp_path, monkeypatch):
     import json
 
-    from t003gui import api, doodle
+    from dotlab import api, doodle
 
     ink = Image.new("L", (core.W, core.SH), 0)
     ink.paste(255, (10, 10, 80, 30))
@@ -95,6 +95,6 @@ def test_a_web_preset_is_a_plain_entry_the_cli_can_read(tmp_path, monkeypatch):
     assert kept.image_path == "" and kept.doodle  # a preset is a style: no picture; the doodle stays
     out = tmp_path / "p.png"
     monkeypatch.setattr(PresetStore, "__init__", lambda self, path=None: setattr(self, "path", tmp_path / "presets.json"))
-    cli.main(["--preset", "Fragile stuff", "--preview", str(out)])  # t003-print reads what the web UI saved
+    cli.main(["--preset", "Fragile stuff", "--preview", str(out)])  # dotlab-print reads what the web UI saved
     assert out.exists()
     assert json.loads(api.preset_entry("x", label))["spec"]["image_path"] == ""

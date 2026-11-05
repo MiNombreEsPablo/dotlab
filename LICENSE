@@ -20,6 +20,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-The fonts in src/t003gui/fonts/ are NOT covered by this licence: each keeps its
+The fonts in src/dotlab/fonts/ are NOT covered by this licence: each keeps its
 own (SIL Open Font License; DejaVu has its own free licence). The texts are in
-src/t003gui/fonts/LICENSES/.
+src/dotlab/fonts/LICENSES/.

@@ -2,7 +2,7 @@
 // blocked site data), so every access is guarded and the page works without it.
 //   get(key, fallback) -> value   set(key, value)
 
-const PREFIX = "t003:";
+const PREFIX = "dotlab:";
 
 export function createStore() {
   return {

@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from t003gui import api, form, spec
+from dotlab import api, form, spec
 
 
 def test_every_field_is_a_real_spec_field_with_valid_choices():

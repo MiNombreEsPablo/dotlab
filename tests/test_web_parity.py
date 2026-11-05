@@ -1,7 +1,7 @@
 """The browser's engine (Pyodide) must draw the same dots as the native one.
 
 It needs Node and Pyodide's npm package, and the network (Pyodide fetches its wheels), so it only runs when
-T003_PARITY_PYODIDE names a folder where `npm install pyodide@<the version the site uses>` was done (CI's web-parity job
+DOTLAB_PARITY_PYODIDE names a folder where `npm install pyodide@<the version the site uses>` was done (CI's web-parity job
 does this). The cases are the ones checked bit for bit by hand: text in DejaVu Sans, every effect, border and
 background, alignments, a QR code, a doodle. Not here, on purpose: the four fonts whose glyphs sit a dot apart (FreeType
 2.13 in Pyodide, a newer one natively) and pictures that need a non-square resize (a newer Pillow resamples differently).
@@ -17,12 +17,12 @@ from pathlib import Path
 import pytest
 from PIL import Image
 
-from t003gui import api, doodle, spec
+from dotlab import api, doodle, spec
 
 ROOT = Path(__file__).resolve().parent.parent
-PYODIDE = os.environ.get("T003_PARITY_PYODIDE")
+PYODIDE = os.environ.get("DOTLAB_PARITY_PYODIDE")
 
-pytestmark = pytest.mark.skipif(not PYODIDE, reason="set T003_PARITY_PYODIDE to a folder with `npm install pyodide`")
+pytestmark = pytest.mark.skipif(not PYODIDE, reason="set DOTLAB_PARITY_PYODIDE to a folder with `npm install pyodide`")
 
 
 def _cases() -> dict:
@@ -48,8 +48,8 @@ def test_the_web_engine_draws_the_same_dots_as_the_native_one(tmp_path):
     cases = _cases()
     (tmp_path / "cases.json").write_text(json.dumps(cases))
     node = subprocess.run(
-        ["node", str(ROOT / "src" / "t003gui" / "web" / "test" / "parity.mjs"), str(tmp_path / "cases.json"), str(tmp_path / "out.json"),
-         str(ROOT / "src" / "t003gui"), PYODIDE],
+        ["node", str(ROOT / "src" / "dotlab" / "web" / "test" / "parity.mjs"), str(tmp_path / "cases.json"), str(tmp_path / "out.json"),
+         str(ROOT / "src" / "dotlab"), PYODIDE],
         capture_output=True, text=True, timeout=600)
     assert node.returncode == 0, node.stdout[-2000:] + node.stderr[-2000:]
     web = json.loads((tmp_path / "out.json").read_text())

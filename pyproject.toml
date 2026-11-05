@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "t003-label-gui"
+name = "dotlab"
 dynamic = ["version"]
 description = "Label designer (web app and CLI) for printing to the ORGBRO T003 thermal label printer over Bluetooth (TSPL)"
 requires-python = ">=3.9"
@@ -19,16 +19,16 @@ dependencies = [
 dev = ["pytest"]
 
 [project.scripts]
-t003-print = "t003gui.cli:main"
+dotlab-print = "dotlab.cli:main"
 
 [tool.setuptools.dynamic]
-version = {attr = "t003gui.__version__"}
+version = {attr = "dotlab.__version__"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-t003gui = ["fonts/*.ttf", "fonts/LICENSES/*", "assets/*", "web/*.html", "web/*.css", "web/*.js", "web/*.mjs", "web/*/*.js", "web/*.py"]
+dotlab = ["fonts/*.ttf", "fonts/LICENSES/*", "assets/*", "web/*.html", "web/*.css", "web/*.js", "web/*.mjs", "web/*/*.js", "web/*.py"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

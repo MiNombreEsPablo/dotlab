@@ -1,7 +1,7 @@
 import pytest
 from PIL import ImageFont
 
-from t003gui import core, fonts, render
+from dotlab import core, fonts, render
 
 JA_SAMPLE = "日本語 ひらがな カタカナ ｱｲｳ"
 

@@ -4,8 +4,8 @@ import io
 import pytest
 from PIL import Image
 
-from t003gui import composition, core, doodle, stickers
-from t003gui.spec import SH, W, LabelSpec
+from dotlab import composition, core, doodle, stickers
+from dotlab.spec import SH, W, LabelSpec
 
 
 def _mask(*boxes) -> Image.Image:
@@ -64,7 +64,7 @@ GRID_DOTS = 24 * 24
 
 
 def test_every_sticker_has_ink_and_fits_the_sticker_at_every_size():
-    from t003gui import stickers
+    from dotlab import stickers
 
     for name in stickers.STICKERS:
         for scale in range(1, stickers.MAX_SCALE + 1):
@@ -95,7 +95,7 @@ def test_describe_is_plain_json_and_complete():
 def test_stickers_reach_clients_as_bitmaps_that_match_the_masks():
     import json
 
-    from t003gui import api
+    from dotlab import api
 
     published = json.loads(api.options())["stickers"]
     assert set(published) == set(stickers.STICKERS)

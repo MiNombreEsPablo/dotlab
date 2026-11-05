@@ -123,7 +123,7 @@ _FORMAT_SUFFIX = {"PNG": ".png", "JPEG": ".jpg", "BMP": ".bmp", "GIF": ".gif", "
 
 
 def pictures_dir() -> Path:
-    return Path(tempfile.gettempdir()) / "t003-label-gui" / "images"
+    return Path(tempfile.gettempdir()) / "dotlab" / "images"
 
 
 def adopt(source, name: str = "") -> str:
