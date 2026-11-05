@@ -52,7 +52,7 @@ seconds (fonts load as you use them), and nothing you make leaves your device. A
   picture left, right, above, below or behind the text (and QR code), with a size control. Floyd–Steinberg, ordered
   (Bayer) crosshatch or hard-cutoff dithering; brightness, contrast, gamma, pixelate, mirror, flip and invert.
   Transparent PNGs print on white and phone photos keep their orientation.
-- **Doodle:** freehand ink on the label with brushes, spray, shapes, fill and 24×24 stickers.
+- **Doodle:** freehand ink on the label with brushes, spray, shapes, fill and 24×24 stickers, with undo and redo (Ctrl+Z, Ctrl+Shift+Z or Ctrl+Y).
 - **Remembers your work:** the label you were designing is back when you reopen the page (its picture isn't kept: *Save* keeps pictures). *File → New label* starts over.
 - **Save and share:** *Save* writes the label as a normal 1-bit **PNG** with the whole design stored inside it. Any
   image viewer or editor opens it as a picture; Dotlab opens it again for editing (*Open label*, or drop it on the
@@ -91,7 +91,7 @@ work to build and to keep working).
 
 **Later**
 - [ ] `useful` `big` Batch-print from a CSV (`{column}` placeholders in the text and QR fields)
-- [ ] `useful` `big` Undo/redo, then an album: recent and saved labels as a thumbnail gallery
+- [ ] `useful` `big` Undo/redo for the whole label (the Doodle tab has its own), then an album: recent and saved labels as a thumbnail gallery
 - [ ] `polish` Presets (kept in the browser) and label files overlap: merge them or make the difference obvious
 - [ ] `fun` More themes: Win95/98 grey, and user-defined colour themes
 - [ ] `useful` Zoomable preview with a ruler/grid overlay
