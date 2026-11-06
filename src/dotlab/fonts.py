@@ -37,7 +37,7 @@ class BundledFont:
         return str(FONT_DIR / self.files[key]), "italic" in key
 
 
-CYBER, PIXEL, WEB, DISPLAY, CLEAN = "Cyber / sci-fi", "Pixel / arcade", "Early web", "Display", "Clean"
+CYBER, PIXEL, WEB, DISPLAY, GOTHIC, CLEAN = "Cyber / sci-fi", "Pixel / arcade", "Early web", "Display", "Gothic", "Clean"
 
 BUNDLED = (
     BundledFont("Orbitron", CYBER, {"regular": "Orbitron[wght].ttf"}, note="variable weight"),
@@ -64,6 +64,9 @@ BUNDLED = (
     BundledFont("Major Mono Display", DISPLAY, {"regular": "MajorMonoDisplay-Regular.ttf"}),
     BundledFont("Dela Gothic One", DISPLAY, {"regular": "DelaGothicOne-Regular.ttf"}, ja=True),
     BundledFont("Stick", DISPLAY, {"regular": "Stick-Regular.ttf"}, ja=True),
+    BundledFont("Cinzel", GOTHIC, {"regular": "Cinzel[wght].ttf"}, note="variable weight"),
+    BundledFont("UnifrakturMaguntia", GOTHIC, {"regular": "UnifrakturMaguntia-Book.ttf"}),
+    BundledFont("Pirata One", GOTHIC, {"regular": "PirataOne-Regular.ttf"}),
     BundledFont(
         "DejaVu Sans", CLEAN,
         {"regular": "DejaVuSans.ttf", "bold": "DejaVuSans-Bold.ttf",
@@ -90,5 +93,5 @@ def bundled_font(family: str) -> BundledFont | None:
 
 def categories() -> list[tuple[str, list[str]]]:
     """[(category, [family, ...])] in display order, for the GUI picker."""
-    order = (CYBER, PIXEL, WEB, DISPLAY, CLEAN)
+    order = (CYBER, PIXEL, WEB, DISPLAY, GOTHIC, CLEAN)
     return [(cat, [f.family for f in BUNDLED if f.category == cat]) for cat in order]

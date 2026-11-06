@@ -43,7 +43,7 @@ seconds (fonts load as you use them), and nothing you make leaves your device. A
 ## Features
 
 - **Live 1-bit preview** that is the same bitmap that gets printed (what you see is what you stick).
-- **Text:** 23 bundled open-licence fonts in five groups (Cyber, Pixel, Early web, Display, Clean), bold/italic, size,
+- **Text:** 26 bundled open-licence fonts in six groups (Cyber, Pixel, Early web, Display, Gothic, Clean), bold/italic, size,
   left/centre/right and top/middle/bottom alignment. Latin-only fonts borrow kana and kanji from Zen Kaku Gothic New;
   DotGothic16, Yusei Magic, Dela Gothic One and Stick have their own Japanese.
 - **Effects:** dithered shadow, outline, 3D WordArt, glitch, neon glow, scanline text.
