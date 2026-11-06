@@ -71,8 +71,9 @@ seconds (fonts load as you use them), and nothing you make leaves your device. A
 ## How it works
 
 The T003 speaks TSPL. Dotlab renders a 384×224 dot label (58 mm paper, 203 dpi, 28 mm stickers), turns it into a TSPL
-bitmap and sends it over Bluetooth: Web Bluetooth (GATT) or Web Serial (RFCOMM) from the page. See
-[AGENTS.md](AGENTS.md) for the hardware facts and the code layout.
+bitmap and sends it over Bluetooth: Web Bluetooth (GATT) or Web Serial (RFCOMM) from the page. The USB stick in the
+box holds no label software, only a print driver that sends the same kind of TSPL bitmap
+([what it tells us](docs/vendor-driver.md)). See [AGENTS.md](AGENTS.md) for the hardware facts and the code layout.
 
 ## From source
 
@@ -108,7 +109,7 @@ work to build and to keep working).
 - [ ] `polish` A keyboard-shortcuts window (Ctrl+?)
 
 **Needs hardware or research first**
-- [ ] `research` Other label sizes and continuous paper: a plain roll prints, but the printer then shows "Label error" and ignores further jobs until restarted (see AGENTS.md); needs a new idea before any size option
+- [ ] `research` Other label sizes and continuous paper: a plain roll prints, but the printer then shows "Label error" and ignores further jobs until restarted (see AGENTS.md); the vendor driver resets tear/peel/cutter and offset on every job, which we don't (`docs/vendor-driver.md`); untested, held until there is a spare roll to try it on
 - [ ] `research` Printing from iOS through a Web Bluetooth browser such as Bluefy
 - [ ] `research` Check Bluetooth serial on Windows and macOS Chrome (Web Bluetooth should work there too)
 - [ ] `research` Other cheap Bluetooth thermal printers (the page's printer code is mostly TSPL plus a few UUIDs)
