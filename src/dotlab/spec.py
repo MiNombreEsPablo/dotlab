@@ -44,7 +44,7 @@ class LabelSpec:
     flip: bool = False  # images: top-bottom
     invert: bool = False  # images: negative
     copies: int = 1
-    density: int = 7
+    density: int = -1  # printer darkness 0-15; -1 = automatic, from how much of the label is ink (protocol.auto_density)
     # text
     font: str = DEFAULT_FONT  # family name, resolved through fontconfig
     bold: bool = True

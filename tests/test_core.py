@@ -95,3 +95,10 @@ def test_label_bitmap_is_the_sticker_only_and_export_uses_it(tmp_path):
 def test_density_and_copies_are_clamped_in_the_payload():
     payload = core.tspl(core.LabelSpec(text="x", density=99, copies=0))
     assert b"DENSITY 15" in payload and payload.endswith(b"PRINT 1,1\r\n")
+
+
+def test_auto_density_goes_down_as_the_label_gets_darker():
+    from dotlab.protocol import auto_density
+    assert auto_density(b"\xff" * 100) == 7  # blank
+    assert auto_density(b"\x00" * 100) == 1  # solid ink
+    assert b"DENSITY -" not in core.tspl(core.LabelSpec(text="x"))

@@ -101,7 +101,7 @@ FIELDS = (
     Field("bars", "toggle", "Under-construction bars", PAPER),
     Field("doodle", "doodle", "Doodle", "doodle"),  # the drawing tools are the client's own; the schema places the tab
     Field("copies", "number", "Copies", OUTPUT, minimum=1, maximum=99),
-    Field("density", "number", "Darkness", OUTPUT, minimum=0, maximum=15),
+    Field("density", "number", "Darkness", OUTPUT, minimum=-1, maximum=15, tip="-1 = automatic: lower for photos and other dark labels"),
 )
 
 # What the inspector shows for the selected layer: `tab` is the layer type (or "box" for every layer but a sticker), `name`
