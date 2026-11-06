@@ -1,6 +1,6 @@
 // The doodle tab: the tools, and a transparent layer laid over the preview to draw on, so you draw on the label itself.
 // The drawing engine is doodle-raster.js; what the engine publishes (tools, inks, limits) comes from
-// api.options(). The doodle is saved as the spec's `doodle` text: a base64 PNG, white dots = ink (see doodle.py).
+// api.options(). The doodle is saved as the spec's `doodle` text: a base64 PNG: white dots = black ink, mid-grey = white ink (see doodle.py).
 // (Stickers are layers now: see layers.js.)
 //   createDoodleWidget(options) -> { make(field, notify), overlay, setActive(bool), setUnderlay(gray) }
 
@@ -20,7 +20,7 @@ function pngFromMask(mask, width, height) { // "" when nothing is drawn
   const context = canvas.getContext("2d");
   const image = context.createImageData(width, height);
   for (let i = 0; i < mask.length; i++) {
-    const v = mask[i] ? 255 : 0;
+    const v = mask[i] === 2 ? 128 : mask[i] ? 255 : 0;
     image.data[i * 4] = image.data[i * 4 + 1] = image.data[i * 4 + 2] = v;
     image.data[i * 4 + 3] = 255;
   }
@@ -40,7 +40,7 @@ async function maskFromPng(base64, width, height) { // null for anything that is
     context.drawImage(image, 0, 0);
     const data = context.getImageData(0, 0, width, height).data;
     const mask = new Uint8Array(width * height);
-    for (let i = 0; i < mask.length; i++) mask[i] = data[i * 4] > 127 ? 1 : 0;
+    for (let i = 0; i < mask.length; i++) mask[i] = data[i * 4] > 191 ? 1 : data[i * 4] > 63 ? 2 : 0;
     return mask;
   } catch (_) {
     return null;
@@ -59,12 +59,13 @@ export function createDoodleWidget(options) {
   const buffer = new Uint8ClampedArray(width * height * 4);
   let queued = false;
   let inkColor = [0, 0, 0]; // the looks that tint the preview tint the ink with it
+  let paperColor = [255, 255, 255]; // ... and the white ink with the paper
   const redraw = () => {
     if (queued) return;
     queued = true;
     requestAnimationFrame(() => {
       queued = false;
-      context.putImageData(new ImageData(doodle.toRgba(buffer, inkColor), width, height), 0, 0);
+      context.putImageData(new ImageData(doodle.toRgba(buffer, inkColor, paperColor), width, height), 0, 0);
     });
   };
 
@@ -77,6 +78,9 @@ export function createDoodleWidget(options) {
     const tool = el("select", { id: "doodle-tool" });
     tool.setAttribute("aria-label", "Tool");
     for (const [value, label] of info.tools) tool.append(new Option(label, value));
+    const colour = el("select", { id: "doodle-colour" });
+    colour.setAttribute("aria-label", "Ink");
+    colour.append(new Option("Black", "1"), new Option("White (lightens a dark picture)", "2"));
     const ink = el("select", { id: "doodle-ink" });
     ink.setAttribute("aria-label", "Pattern");
     for (const [value, label] of info.inks) ink.append(new Option(label, value));
@@ -94,16 +98,18 @@ export function createDoodleWidget(options) {
     const clear = el("button", { type: "button", className: "gel" }, "Clear");
     const row = (label, control, className = "") => el("div", { className: `field ${className}` }, el("span", { className: "row-title" }, label), control);
     const rows = {
+      colour: row("Ink", colour),
       ink: row("Pattern", ink),
       brush: row("Brush", brush.root),
     };
     const root = el("div", { className: "doodle-tools" },
-      row("Tool", tool), rows.ink, rows.brush, snap,
+      row("Tool", tool), rows.colour, rows.ink, rows.brush, snap,
       el("div", { className: "reset-row buttons" }, undo, redo, clear),
       el("p", { className: "needs-hint doodle-hint" }, "Scribble right on the label! Hold Shift for straight lines, squares and circles."));
 
     function syncTool() {
       doodle.tool = tool.value;
+      rows.colour.hidden = tool.value === "eraser";
       rows.ink.hidden = !info.uses_ink.includes(tool.value);
       rows.brush.hidden = !info.uses_brush.includes(tool.value);
       syncButtons();
@@ -122,6 +128,7 @@ export function createDoodleWidget(options) {
     }
     tool.addEventListener("input", syncTool);
     ink.addEventListener("input", () => { doodle.ink = ink.value; });
+    colour.addEventListener("input", () => { doodle.color = Number(colour.value); });
     snapBox.addEventListener("input", () => { doodle.showGrid = snapBox.checked; redraw(); });
     undo.addEventListener("click", () => { if (doodle.undo()) changed(); });
     redo.addEventListener("click", () => { if (doodle.redo()) changed(); });
@@ -204,8 +211,9 @@ export function createDoodleWidget(options) {
       overlay.hidden = !on;
       redraw();
     },
-    setInk(rgb) {
+    setInk(rgb, paper = [255, 255, 255]) {
       inkColor = rgb;
+      paperColor = paper;
       redraw();
     },
     setUnderlay(gray) { // the label without its doodle: where its dark dots are, the paint bucket stops

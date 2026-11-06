@@ -1,4 +1,4 @@
-// The doodle's drawing engine: pure functions on a bit grid (one byte per dot, 1 = ink), no DOM, so Node can test it.
+// The doodle's drawing engine: pure functions on a bit grid (one byte per dot: 0 = untouched, 1 = black ink, 2 = white ink), no DOM, so Node can test it.
 // The doodle's tools: hard-edged strokes (the printer is 1-bit),
 // dither-pattern inks anchored to the label, a bucket that stops at ink and at the label's own dark pixels, and undo. What it paints is the doodle: doodle.py decodes it, the engine draws it over everything.
 //
@@ -69,6 +69,7 @@ export class Doodle {
     this.tool = "pen";
     this.brush = 4;
     this.ink = "solid";
+    this.color = 1; // 1 = black ink, 2 = white ink (paper-coloured: lightens what is below)
     this.constrain = false; // Shift held: lines snap to 45 degrees, rectangles and ellipses become squares and circles
     this.grid = 8; // spacing of the snap grid, in dots
     this.showGrid = false;
@@ -139,7 +140,7 @@ export class Doodle {
   }
 
   _square(target, x, y, size, allowed) {
-    for (let j = 0; j < size; j++) for (let i = 0; i < size; i++) this._dot(target, x + i, y + j, 1, allowed);
+    for (let j = 0; j < size; j++) for (let i = 0; i < size; i++) this._dot(target, x + i, y + j, this.color, allowed);
   }
 
   _freehand(target, a, b) { // one stretch of a freehand tool, a -> b (equal for a click)
@@ -147,7 +148,7 @@ export class Doodle {
     if (this.tool === "pen" || this.tool === "eraser") {
       const eraser = this.tool === "eraser";
       for (const [x, y] of linePoints(a[0], a[1], b[0], b[1])) {
-        this._disc(target, x, y, eraser ? this.brush * 2 : this.brush, eraser ? 0 : 1, allowed);
+        this._disc(target, x, y, eraser ? this.brush * 2 : this.brush, eraser ? 0 : this.color, allowed);
       }
     } else if (this.tool === "spray") {
       this._sprayAt(target, b);
@@ -171,7 +172,7 @@ export class Doodle {
     for (let n = Math.max(3, Math.floor((radius * radius) / 10)); n > 0; n--) {
       const r = radius * Math.sqrt(this.random());
       const angle = this.random() * 6.2832;
-      this._dot(target, centre[0] + Math.round(r * Math.cos(angle)), centre[1] + Math.round(r * Math.sin(angle)), 1, solid);
+      this._dot(target, centre[0] + Math.round(r * Math.cos(angle)), centre[1] + Math.round(r * Math.sin(angle)), this.color, solid);
     }
   }
 
@@ -192,7 +193,7 @@ export class Doodle {
   _shape(target, a, end) { // line, rectangle or ellipse (outlined with the brush, or filled with the ink), drawn with the brush
     const b = this._constrained(a, end);
     const allowed = this._pattern();
-    const brush = (x, y) => this._disc(target, x, y, this.brush, 1, allowed);
+    const brush = (x, y) => this._disc(target, x, y, this.brush, this.color, allowed);
     if (this.tool === "line") {
       for (const [x, y] of linePoints(a[0], a[1], b[0], b[1])) brush(x, y);
       return;
@@ -209,11 +210,11 @@ export class Doodle {
       for (let y = y0; y <= y1; y++) {
         for (let x = x0; x <= x1; x++) {
           if (oval && ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 > 1) continue;
-          this._dot(target, x, y, 1, allowed);
+          this._dot(target, x, y, this.color, allowed);
         }
       }
       const solid = () => true;
-      const outline = (x, y) => this._disc(target, x, y, this.brush, 1, solid);
+      const outline = (x, y) => this._disc(target, x, y, this.brush, this.color, solid);
       if (!oval) {
         for (const [p, q] of [[[x0, y0], [x1, y0]], [[x1, y0], [x1, y1]], [[x1, y1], [x0, y1]], [[x0, y1], [x0, y0]]]) {
           for (const [x, y] of linePoints(p[0], p[1], q[0], q[1])) outline(x, y);
@@ -263,7 +264,7 @@ export class Doodle {
     }
     const grown = dilate(region, width, height);
     const allowed = this._pattern();
-    for (let i = 0; i < grown.length; i++) if (grown[i] && allowed(i % width, Math.floor(i / width))) this.pixels[i] = 1;
+    for (let i = 0; i < grown.length; i++) if (grown[i] && allowed(i % width, Math.floor(i / width))) this.pixels[i] = this.color;
     return true;
   }
 
@@ -321,7 +322,7 @@ export class Doodle {
   // --- display -----------------------------------------------------------------------------------------------------
 
   // The ink as dots (black unless a look tints it) with alpha, plus what is being dragged out (a rubber-band shape).
-  toRgba(out, ink = [0, 0, 0]) {
+  toRgba(out, ink = [0, 0, 0], white = [255, 255, 255]) {
     let layer = this.pixels;
     const ghost = [];
     if (this._start && SHAPES.includes(this.tool)) {
@@ -332,9 +333,10 @@ export class Doodle {
       for (let y = 0; y < this.height; y += this.grid) for (let x = 0; x < this.width; x += this.grid) ghost.push([x, y, 70]);
     }
     for (let i = 0; i < layer.length; i++) {
-      out[i * 4] = ink[0];
-      out[i * 4 + 1] = ink[1];
-      out[i * 4 + 2] = ink[2];
+      const rgb = layer[i] === 2 ? white : ink;
+      out[i * 4] = rgb[0];
+      out[i * 4 + 1] = rgb[1];
+      out[i * 4 + 2] = rgb[2];
       out[i * 4 + 3] = layer[i] ? 255 : 0;
     }
     for (const [x, y, alpha = 128] of ghost) {

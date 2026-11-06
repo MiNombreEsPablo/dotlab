@@ -657,6 +657,9 @@ def render(spec: LabelSpec) -> Image.Image:
     ink = doodle.decode(spec.doodle)
     if ink is not None:  # the doodle is the top layer, over the picture, QR and text alike
         img.paste(0, (0, 0), ink)
+    white = doodle.decode_white(spec.doodle)
+    if white is not None:  # white ink: over everything, black doodle included (the stored doodle holds one colour per dot)
+        img.paste(255, (0, 0), white)
     return img
 
 

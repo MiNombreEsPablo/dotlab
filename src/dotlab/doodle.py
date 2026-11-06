@@ -1,7 +1,8 @@
 """Freehand doodles: a 1-bit ink mask the size of the sticker, stored in `LabelSpec.doodle` as base64 PNG text.
 
-A string rather than a file, so a doodle travels with presets and label files and needs no extra plumbing. White
-pixels in the mask are ink (printed black), black ones are untouched label.
+A string rather than a file, so a doodle travels with presets and label files and needs no extra plumbing. Light
+pixels in the mask are ink: white (255) prints black, mid-grey (128) is white ink, which knocks the picture out to paper
+(to add brightness on something dark); black ones are untouched label.
 """
 from __future__ import annotations
 
@@ -17,39 +18,64 @@ from PIL import Image, UnidentifiedImageError
 from .spec import SH, W
 
 SIZE = (W, SH)
+BLACK, WHITE = 255, 128  # a dot of the stored doodle: black ink, white ink (paper-coloured, to lighten something dark), or 0 = untouched
+_BLACK_AT, _WHITE_AT = 192, 64  # what a decoded level counts as: >= 192 black ink, 64-191 white ink
 
 
 def encode(mask: Image.Image) -> str:
-    """Base64 PNG of `mask` (any mode, size W x SH; non-zero is ink), or "" when nothing is drawn."""
+    """Base64 PNG of `mask` (any mode, size W x SH): >= 192 is black ink, 64-191 white ink, less is untouched label.
+    "" when nothing is drawn. A doodle with only black ink is a 1-bit PNG, as it always was."""
     if mask.size != SIZE:
         raise ValueError(f"a doodle is {W}x{SH} dots, not {mask.width}x{mask.height}")
-    bits = mask.convert("L").point([0] * 128 + [255] * 128).convert("1")
-    if not bits.getbbox():
+    levels = mask.convert("L")
+    black = levels.point([0] * _BLACK_AT + [255] * (256 - _BLACK_AT))
+    white = levels.point([0] * _WHITE_AT + [255] * (_BLACK_AT - _WHITE_AT) + [0] * (256 - _BLACK_AT))
+    if not (black.getbbox() or white.getbbox()):
         return ""
+    if white.getbbox():
+        bits = Image.new("L", SIZE, 0)
+        bits.paste(BLACK, mask=black)
+        bits.paste(WHITE, mask=white)
+    else:
+        bits = black.convert("1")
     out = io.BytesIO()
     bits.save(out, "PNG", optimize=True)
     return base64.b64encode(out.getvalue()).decode("ascii")
 
 
-@lru_cache(maxsize=8)  # the preview renders on every slider step; the mask is shared, so never modify it
-def decode(data: str) -> Image.Image | None:
-    """The ink mask (mode "L", 0 or 255), or None for an empty or damaged doodle: stored files may be hand-edited."""
+@lru_cache(maxsize=8)  # the preview renders on every slider step; the image is shared, so never modify it
+def _levels(data: str) -> Image.Image | None:
     if not data:
         return None
     try:
         img = Image.open(io.BytesIO(base64.b64decode(data, validate=True)))
         if img.size != SIZE:  # checked from the header, before any pixels are decoded
             return None
-        return img.convert("L").point([0] * 128 + [255] * 128)
+        return img.convert("L")
     except (binascii.Error, ValueError, OSError, UnidentifiedImageError, Image.DecompressionBombError):
         return None
 
 
+def decode(data: str) -> Image.Image | None:
+    """The black-ink mask (mode "L", 0 or 255), or None for an empty or damaged doodle: stored files may be hand-edited."""
+    levels = _levels(data)
+    return None if levels is None else levels.point([0] * _BLACK_AT + [255] * (256 - _BLACK_AT))
+
+
+def decode_white(data: str) -> Image.Image | None:
+    """The white-ink mask (mode "L", 0 or 255), or None when the doodle has none."""
+    levels = _levels(data)
+    if levels is None:
+        return None
+    mask = levels.point([0] * _WHITE_AT + [255] * (_BLACK_AT - _WHITE_AT) + [0] * (256 - _BLACK_AT))
+    return mask if mask.getbbox() else None
+
+
 def canonical(data: str) -> str:
-    """The doodle in the engine's own compact encoding (a 1-bit PNG), whoever made it: a browser canvas writes a
-    full-colour PNG several times the size. "" for an empty or damaged doodle. Idempotent."""
-    mask = decode(data)
-    return encode(mask) if mask is not None else ""
+    """The doodle in the engine's own compact encoding (a 1-bit PNG, or grey levels with white ink), whoever made it: a
+    browser canvas writes a full-colour PNG several times the size. "" for an empty or damaged doodle. Idempotent."""
+    levels = _levels(data)
+    return encode(levels) if levels is not None else ""
 
 
 # --- the drawing tools, as data: a client draws, the engine says what there is to draw with --------------------------

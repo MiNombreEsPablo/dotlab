@@ -277,3 +277,20 @@ test("8x8 pattern tiles repeat every 8 dots, anchored to the label", () => {
   assert.equal(inside, 9); // dots at 8, 16, 24 in each direction
   assert.equal(at(d, 8, 8) + at(d, 16, 24), 2);
 });
+
+test("white ink paints 2, the bucket fills with the chosen colour, and a black stroke over it wins", () => {
+  const d = make();
+  d.brush = 1;
+  d.color = 2;
+  stroke(d, "pen", [[10, 10]]);
+  assert.equal(at(d, 10, 10), 2);
+  d.color = 1;
+  stroke(d, "pen", [[10, 10]]);
+  assert.equal(at(d, 10, 10), 1);
+  const out = d.toRgba(new Uint8ClampedArray(W * H * 4), [0, 0, 0], [250, 250, 250]);
+  stroke(d, "pen", [[20, 20]]);
+  d.color = 2;
+  stroke(d, "pen", [[30, 30]]);
+  const rgba = d.toRgba(out, [0, 0, 0], [250, 250, 250]);
+  assert.deepEqual([...rgba.slice((30 * W + 30) * 4, (30 * W + 30) * 4 + 4)], [250, 250, 250, 255]);
+});

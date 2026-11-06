@@ -198,3 +198,16 @@ def test_the_kenney_tiles_are_square_bitmaps_with_their_licence_shipped():
         assert any("1" in r for r in rows), key
     licence = Path(stickers.__file__).parent / "assets" / "LICENSE.kenney-1-bit-pack.txt"
     assert "Creative Commons Zero" in licence.read_text(encoding="utf-8")
+
+
+def test_white_ink_is_stored_drawn_over_the_picture_and_survives_canonical():
+    both = Image.new("L", (W, SH), 0)
+    both.paste(255, (0, 0, 20, 20))  # black ink
+    both.paste(128, (30, 0, 50, 20))  # white ink
+    text = doodle.encode(both)
+    assert doodle.decode(text).getbbox() == (0, 0, 20, 20) and doodle.decode_white(text).getbbox() == (30, 0, 50, 20)
+    assert doodle.canonical(text) == text
+    assert doodle.decode_white(doodle.encode(_mask((1, 1, 5, 5)))) is None  # black only: no white plane
+    img = core.render(LabelSpec(background="checker", doodle=text)).convert("L")
+    assert img.crop((0, 0, 20, 20)).getextrema() == (0, 0)  # black ink
+    assert img.crop((30, 0, 50, 20)).getextrema() == (255, 255)  # white ink knocks the checker out to paper

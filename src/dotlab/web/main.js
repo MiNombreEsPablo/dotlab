@@ -185,7 +185,7 @@ async function main() {
   // the look: remembered, applied at once; the preview and the doodle ink follow its tint
   const retint = () => {
     if (last) draw(last);
-    doodle.setInk(previewColors().ink);
+    doodle.setInk(previewColors().ink, previewColors().paper);
   };
   let currentTheme = applyTheme(await store.get("theme", DEFAULT_THEME));
   retint();
