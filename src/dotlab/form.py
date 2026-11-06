@@ -121,6 +121,7 @@ LAYER_FIELDS = (
     Field("font", "choice", "Font", "text", choices=_font_choices()),
     Field("bold", "toggle", "Bold", "text", row="Style"),
     Field("italic", "toggle", "Italic", "text", row="Style"),
+    Field("invert", "toggle", "Invert", "text", row="Style", tip="White letters instead of black: for text over a dark picture"),
     Field("size", "number", "Size", "text", minimum=0, maximum=120, zero_label="Auto (fit)",
           tip="Largest text size in dots; Auto picks the biggest that fits the box"),
     Field("align", "choice", "Align", "text", choices=_choices(spec.ALIGNMENTS)),
@@ -151,6 +152,7 @@ LAYER_FIELDS = (
     Field("data", "text", "QR", "qr", tip="Anything a phone can scan: a link, a Wi-Fi code, some words"),
     Field("name", "sticker", "Sticker", "sticker"),  # the picker is the client's own (api.options()["sticker_groups"])
     Field("scale", "slider", "Size", "sticker", minimum=1, maximum=stickers.MAX_SCALE, suffix="×"),
+    Field("invert", "toggle", "Invert", "sticker", tip="Draw it white instead of black: for a sticker over a dark picture"),
 )
 
 

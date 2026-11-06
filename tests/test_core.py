@@ -102,3 +102,14 @@ def test_auto_density_goes_down_as_the_label_gets_darker():
     assert auto_density(b"\xff" * 100) == 7  # blank
     assert auto_density(b"\x00" * 100) == 1  # solid ink
     assert b"DENSITY -" not in core.tspl(core.LabelSpec(text="x"))
+
+
+def test_invert_draws_text_and_stickers_white_over_a_picture():
+    import json
+    from dotlab.render import render
+    def dark(extra):
+        lay = [{"t": "text", "text": "HI", "x": 0, "y": 0, "w": 384, "h": 224, **extra}]
+        return render(core.LabelSpec(layers=json.dumps(lay), background="checker")).convert("L")
+    black, white = dark({}), dark({"invert": True})
+    assert black.tobytes() != white.tobytes()
+    assert sum(white.tobytes()) != sum(black.tobytes())

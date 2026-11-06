@@ -728,11 +728,11 @@ def _compose_layers(spec: LabelSpec) -> Image.Image:
             cover_alpha = Image.new("L", (cw, ch), 0)
             at = ({"left": 0, "center": (cw - value.width) // 2, "right": cw - value.width}[align],
                   {"top": 0, "middle": (ch - value.height) // 2, "bottom": ch - value.height}[valign])
-            sheet.paste(value, at)
+            sheet.paste(ImageOps.invert(value) if layer.invert else value, at)  # invert: white letters (a halo turns black)
             cover_alpha.paste(alpha, at)
             img.paste(_orient(sheet, layer), (x, y), _orient(cover_alpha, layer))  # ... then mirrored, flipped and turned as a whole
         elif layer.t == "sticker" and layer.name:
-            img.paste(0, (x, y), _orient(stickers.mask(layer.name, layer.scale), layer))
+            img.paste(255 if layer.invert else 0, (x, y), _orient(stickers.mask(layer.name, layer.scale), layer))
     if not framed:
         frame()
     return img
