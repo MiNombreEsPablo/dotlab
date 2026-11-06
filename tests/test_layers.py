@@ -86,3 +86,27 @@ def test_at_most_max_layers_are_kept():
 def test_layers_count_as_content():
     assert spec.has_content(core.LabelSpec(layers=layers.encode([layers.Layer("text", text="x")])))
     assert not spec.has_content(core.LabelSpec())
+
+
+def test_a_label_file_carries_every_image_layer_and_a_preset_drops_them(picture, tmp_path):
+    from dotlab import api, composition
+    other = tmp_path / "other.png"
+    Image.new("L", (20, 20), 0).save(other)
+    text = layers.encode([layers.Layer("image", 0, 0, 100, 100, path=picture), layers.Layer("text", 100, 0, 200, 100, text="x"),
+                          layers.Layer("image", 0, 110, 100, 100, path=str(other))])
+    label = core.LabelSpec(layers=text)
+    loaded = composition.loads(composition.dumps(label), tmp_path / "store")
+    got = layers.parse(loaded.layers)
+    assert [l.t for l in got] == ["image", "text", "image"]
+    assert all(__import__("pathlib").Path(l.path).is_file() for l in got if l.t == "image")
+    assert core.render(loaded).tobytes() == core.render(label).tobytes()
+    import json
+    kept = json.loads(api.preset_entry("p", {"layers": text}))["spec"]["layers"]
+    assert layers.image_paths(kept) == {}
+
+
+def test_every_text_layers_font_is_fetched():
+    from dotlab import api
+    text = layers.encode([layers.Layer("text", text="a", font="Orbitron"), layers.Layer("text", text="b", font="Bangers")])
+    names = api.fonts_needed({"layers": text})
+    assert any("Orbitron" in n for n in names) and any("Bangers" in n for n in names)

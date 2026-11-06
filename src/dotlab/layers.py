@@ -141,3 +141,13 @@ def sticker_layer(name: str, cx: int, cy: int, scale: int) -> Layer:
     scale = min(stickers.MAX_SCALE, max(1, scale))
     side = stickers.size(name) * scale
     return Layer("sticker", cx - (side >> 1), cy - (side >> 1), side, side, name=name, scale=scale)
+
+
+def image_paths(text: str) -> dict[int, str]:
+    """{index in the canonical layer list: path} of the layers that have a picture."""
+    return {i: layer.path for i, layer in enumerate(parse(text)) if layer.t == "image" and layer.path}
+
+
+def with_paths(text: str, paths: dict[int, str]) -> str:
+    """The layers with the picture path of layer i replaced by paths[i] (for the layers named in `paths`)."""
+    return encode([_replace(layer, path=paths[i]) if i in paths else layer for i, layer in enumerate(parse(text))])

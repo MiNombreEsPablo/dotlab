@@ -13,7 +13,7 @@ import json
 from dataclasses import asdict, replace
 from pathlib import Path, PurePath
 
-from . import __version__, about, bluetooth, composition, doodle, fonts, form, imaging, presets, render, spec, stickers
+from . import __version__, about, bluetooth, composition, doodle, fonts, form, imaging, layers, presets, render, spec, stickers
 from .protocol import STATUS_QUERY, status_problems, tspl  # noqa: F401
 
 
@@ -61,8 +61,9 @@ def preset_entry(name: str, raw: str | bytes | dict) -> str:
     """What to keep for a preset: {"name": the cleaned name, "spec": the label}, as JSON text. A preset is a style: the
     picture is not kept (a picture lives in a saved label file), and the doodle is stored compactly. ValueError with a
     sentence for a bad name."""
-    label = replace(label_from_json(raw), image_path="", doodle=doodle.canonical(label_from_json(raw).doodle),
-                    stickers=stickers.canonical(label_from_json(raw).stickers))
+    given = label_from_json(raw)
+    label = replace(given, image_path="", doodle=doodle.canonical(given.doodle), stickers=stickers.canonical(given.stickers),
+                    layers=layers.with_paths(given.layers, {i: "" for i in layers.image_paths(given.layers)}))
     return json.dumps({"name": presets.clean_name(name), "spec": asdict(label)})
 
 
@@ -100,7 +101,9 @@ def fonts_needed(raw: str | bytes | dict) -> list[str]:
     """Names of the font files (in the bundled `fonts/` folder) that rendering this label can open, so a client that
     loads fonts on demand knows what to fetch first: the chosen font, the Japanese fallback, the last resort and any font a background draws with."""
     label = label_from_json(raw)
-    wanted = [render.font_path(label.font, label.bold, label.italic)[0], fonts.FALLBACK_JA.pick(label.bold, False)[0],
+    families = [(label.font, label.bold, label.italic)] if not label.layers else []
+    families += [(l.font, l.bold, l.italic) for l in layers.parse(label.layers) if l.t == "text"]
+    wanted = [render.font_path(*family)[0] for family in families] + [fonts.FALLBACK_JA.pick(label.bold, False)[0],
               *render.FALLBACK_FONT_PATHS]
     if label.background in render.BACKGROUND_FONTS:  # a pattern made of text, such as the matrix rain
         wanted.append(render.font_path(render.BACKGROUND_FONTS[label.background], False)[0])
