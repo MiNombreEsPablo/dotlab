@@ -59,6 +59,7 @@ class LabelSpec:
     background: str = "none"
     bars: bool = False  # hazard-stripe "under construction" bars top and bottom
     doodle: str = ""  # freehand ink drawn over everything: a base64 PNG mask, see doodle.py
+    layers: str = ""  # text, pictures, QR codes and stickers as placed objects, bottom to top: JSON, see layers.py. When set, the fields above that describe them (text ... invert, stickers) are ignored
     stickers: str = ""  # placed stickers, drawn under the doodle: JSON [[name, centre x, centre y, scale], ...], see stickers.py
 
     @classmethod
@@ -94,7 +95,7 @@ def layout_hint(spec: LabelSpec) -> str:
     return ""
 
 
-CONTENT_FIELDS = ("text", "qr", "image_path", "doodle", "stickers")  # what a label can say; a border or a pattern alone is not content
+CONTENT_FIELDS = ("text", "qr", "image_path", "doodle", "stickers", "layers")  # what a label can say; a border or a pattern alone is not content
 
 
 def has_content(spec: LabelSpec) -> bool:

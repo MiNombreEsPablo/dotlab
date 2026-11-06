@@ -74,7 +74,7 @@ def test_the_picture_chooser_is_placed_by_the_schema_and_drawn_by_the_client():
 
 
 def test_the_doodle_is_the_last_control_to_get_a_place_in_the_schema():
-    assert form.PENDING == frozenset()
+    assert form.PENDING == frozenset({"layers"})  # until the layer list and inspector exist
     assert next(f for f in form.FIELDS if f.kind == "doodle").tab == "doodle"
 
 

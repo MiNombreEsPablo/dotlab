@@ -27,7 +27,7 @@ LABELS = {  # how a choice is worded when `value.capitalize()` isn't enough
 OUTPUT = "output"  # not a tab: shown next to the Print button, whatever tab is open
 
 # LabelSpec fields without a control in the schema yet. 
-PENDING = frozenset()  # (the doodle was the last one)
+PENDING = frozenset({"layers"})  # edited by the layer list and inspector, being built
 
 
 @dataclass(frozen=True)

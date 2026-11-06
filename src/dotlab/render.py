@@ -11,7 +11,7 @@ import qrcode
 from fontTools.ttLib import TTFont
 from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont, ImageOps, UnidentifiedImageError
 
-from . import doodle, stickers
+from . import doodle, layers, stickers
 from . import fonts as bundled_fonts
 from . import imaging
 from .spec import (
@@ -604,7 +604,7 @@ def _pick(value: str, allowed: tuple[str, ...], default: str) -> str:
 
 def render(spec: LabelSpec) -> Image.Image:
     """Grayscale W x H canvas; everything is drawn inside the top SH rows."""
-    img = _compose(spec)
+    img = _compose_layers(spec) if spec.layers else _compose(spec)
     placed = stickers.layer(spec.stickers)
     if placed is not None:  # placed stickers go under the freehand ink
         img.paste(0, (0, 0), placed)
@@ -612,6 +612,92 @@ def render(spec: LabelSpec) -> Image.Image:
     if ink is not None:  # the doodle is the top layer, over the picture, QR and text alike
         img.paste(0, (0, 0), ink)
     return img
+
+
+def _compose_layers(spec: LabelSpec) -> Image.Image:
+    """Background, then each layer bottom to top, then the frame (hazard bars and border) over them."""
+    img = Image.new("L", (W, H), 255)
+    background = _pick(spec.background, BACKGROUNDS, "none")
+    if background != "none":
+        img.paste(_background(background), (0, 0))
+    backdrop = background != "none"  # something dark behind the text: it gets a white halo
+    draw = ImageDraw.Draw(img)
+    for layer in layers.parse(spec.layers):
+        if layer.hidden:
+            continue
+        x, y, w, h = layer.x, layer.y, layer.w, layer.h
+        if layer.t == "image" and layer.path:
+            cover = layer.fit == "cover"
+            src = _picture(layer.picture(), (w, h), cover=cover)
+            img.paste(src, (x + (w - src.width) // 2, y + (h - src.height) // 2))
+            backdrop = backdrop or cover
+        elif layer.t == "qr" and layer.data:
+            qimg = _qr_image(layer.data, min(w, h))
+            qx, qy = x + (w - qimg.width) // 2, y + (h - qimg.height) // 2
+            draw.rectangle([qx - 4, qy - 4, qx + qimg.width + 3, qy + qimg.height + 3], fill=255)  # quiet zone
+            img.paste(qimg, (qx, qy))
+        elif layer.t == "text" and layer.text:
+            align = _pick(layer.align, ALIGNMENTS, "center")
+            valign = _pick(layer.valign, VALIGNMENTS, "middle")
+            path, native_slant = font_path(layer.font, layer.bold, layer.italic)
+            shear = ITALIC_SHEAR if layer.italic and not native_slant else 0
+            max_size = min(MAX_FONT_SIZE, layer.size) if layer.size > 0 else MAX_FONT_SIZE
+            value, alpha = _fit_text_layer(
+                layer.text.replace("\\n", "\n"), path, layer.bold, shear, align,
+                _pick(layer.effect, EFFECTS, "none"), backdrop, w, h, max_size)
+            img.paste(value, (x + {"left": 0, "center": (w - value.width) // 2, "right": w - value.width}[align],
+                              y + {"top": 0, "middle": (h - value.height) // 2, "bottom": h - value.height}[valign]), alpha)
+        elif layer.t == "sticker" and layer.name:
+            img.paste(0, (x, y), stickers.mask(layer.name, layer.scale))
+    if spec.bars:
+        _hazard_bar(img, 0)
+        _hazard_bar(img, SH - BAR_H)
+    if spec.border:
+        top, bottom = (BAR_H, SH - BAR_H) if spec.bars else (0, SH)
+        _border(draw, _pick(spec.border_style, BORDER_STYLES, "solid"), 0, top, W - 1, bottom - 1)
+    return img
+
+
+def legacy_layers(spec: LabelSpec) -> str:
+    """The `layers` text that draws what the older fields (text, qr, image_*, stickers) describe, with the geometry the
+    old fixed arrangement worked out. Same pixels, except that "Image only" no longer drops the frame or the text."""
+    out: list[layers.Layer] = []
+    layout = _pick(spec.image_layout, IMAGE_LAYOUTS, "only") if spec.image_path else ""
+    picture = dict(path=spec.image_path, dither=spec.dither, threshold=spec.threshold, brightness=spec.brightness,
+                   contrast=spec.contrast, gamma=spec.gamma, pixelate=spec.pixelate, mirror=spec.mirror,
+                   flip=spec.flip, invert=spec.invert)
+    top, bottom = (BAR_H, SH - BAR_H) if spec.bars else (0, SH)
+    margin = MARGIN
+    if spec.border:
+        margin = max(MARGIN, BORDER_INSET[_pick(spec.border_style, BORDER_STYLES, "solid")] + 4)
+    ax0, ax1, ay0, ay1 = margin, W - margin, top + margin, bottom - margin
+    if layout == "only":
+        out.append(layers.Layer("image", 0, 0, W, SH, **picture))
+    elif layout == "behind":
+        out.append(layers.Layer("image", 0, 0, W, SH, fit="cover", **picture))
+    elif layout:
+        share = min(80, max(20, spec.image_size)) / 100
+        if layout in ("left", "right"):
+            size = int((ax1 - ax0) * share)
+            region = (ax0, ay0, ax0 + size, ay1) if layout == "left" else (ax1 - size, ay0, ax1, ay1)
+            ax0, ax1 = (ax0 + size + MARGIN, ax1) if layout == "left" else (ax0, ax1 - size - MARGIN)
+        else:
+            size = int((ay1 - ay0) * share)
+            region = (ax0, ay0, ax1, ay0 + size) if layout == "top" else (ax0, ay1 - size, ax1, ay1)
+            ay0, ay1 = (ay0 + size + MARGIN, ay1) if layout == "top" else (ay0, ay1 - size - MARGIN)
+        out.append(layers.Layer("image", region[0], region[1], region[2] - region[0], region[3] - region[1], **picture))
+    if layout != "only":
+        text_w = ax1 - ax0
+        if spec.qr:
+            qimg = _qr_image(spec.qr, ay1 - ay0)
+            qx = ax1 - qimg.width if spec.text else ax0 + (text_w - qimg.width) // 2
+            out.append(layers.Layer("qr", qx, ay0 + (ay1 - ay0 - qimg.height) // 2, qimg.width, qimg.height, data=spec.qr))
+            text_w = qx - MARGIN - ax0
+        if spec.text and text_w > 0:
+            out.append(layers.Layer(
+                "text", ax0, ay0, text_w, ay1 - ay0, text=spec.text, font=spec.font, bold=spec.bold,
+                italic=spec.italic, size=spec.size, align=spec.align, valign=spec.valign, effect=spec.effect))
+    return layers.encode(out)
 
 
 def _compose(spec: LabelSpec) -> Image.Image:
