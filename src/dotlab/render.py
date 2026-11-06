@@ -607,7 +607,7 @@ def _pick(value: str, allowed: tuple[str, ...], default: str) -> str:
 def render(spec: LabelSpec) -> Image.Image:
     """Grayscale W x H canvas; everything is drawn inside the top SH rows."""
     img = _compose_layers(spec) if spec.layers else _compose(spec)
-    placed = stickers.layer(spec.stickers)
+    placed = None if spec.layers else stickers.layer(spec.stickers)  # (the legacy field: once there are layers it is ignored)
     if placed is not None:  # placed stickers go under the freehand ink
         img.paste(0, (0, 0), placed)
     ink = doodle.decode(spec.doodle)
@@ -617,16 +617,30 @@ def render(spec: LabelSpec) -> Image.Image:
 
 
 def _compose_layers(spec: LabelSpec) -> Image.Image:
-    """Background, then each layer bottom to top, then the frame (hazard bars and border) over them."""
+    """Background, then each layer bottom to top. The frame (hazard bars and border) is drawn just before the first sticker
+    layer, or after the last layer when there is none: so it is over pictures, QR codes and text, and under stickers."""
     img = Image.new("L", (W, H), 255)
     background = _pick(spec.background, BACKGROUNDS, "none")
     if background != "none":
         img.paste(_background(background), (0, 0))
     backdrop = background != "none"  # something dark behind the text: it gets a white halo
     draw = ImageDraw.Draw(img)
+    framed = False
+
+    def frame() -> None:
+        if spec.bars:
+            _hazard_bar(img, 0)
+            _hazard_bar(img, SH - BAR_H)
+        if spec.border:
+            top, bottom = (BAR_H, SH - BAR_H) if spec.bars else (0, SH)
+            _border(draw, _pick(spec.border_style, BORDER_STYLES, "solid"), 0, top, W - 1, bottom - 1)
+
     for layer in layers.parse(spec.layers):
         if layer.hidden:
             continue
+        if layer.t == "sticker" and not framed:
+            frame()
+            framed = True
         x, y, w, h = layer.x, layer.y, layer.w, layer.h
         if layer.t == "image" and layer.path:
             cover = layer.fit == "cover"
@@ -651,18 +665,14 @@ def _compose_layers(spec: LabelSpec) -> Image.Image:
                               y + {"top": 0, "middle": (h - value.height) // 2, "bottom": h - value.height}[valign]), alpha)
         elif layer.t == "sticker" and layer.name:
             img.paste(0, (x, y), stickers.mask(layer.name, layer.scale))
-    if spec.bars:
-        _hazard_bar(img, 0)
-        _hazard_bar(img, SH - BAR_H)
-    if spec.border:
-        top, bottom = (BAR_H, SH - BAR_H) if spec.bars else (0, SH)
-        _border(draw, _pick(spec.border_style, BORDER_STYLES, "solid"), 0, top, W - 1, bottom - 1)
+    if not framed:
+        frame()
     return img
 
 
 def legacy_layers(spec: LabelSpec) -> str:
     """The `layers` text that draws what the older fields (text, qr, image_*, stickers) describe, with the geometry the
-    old fixed arrangement worked out. Same pixels, except that "Image only" no longer drops the frame or the text."""
+    old fixed arrangement worked out. Same pixels (stickers too: the frame is under them, as it was), except that "Image only" no longer drops the frame or the text."""
     out: list[layers.Layer] = []
     layout = _pick(spec.image_layout, IMAGE_LAYOUTS, "only") if spec.image_path else ""
     picture = dict(path=spec.image_path, dither=spec.dither, threshold=spec.threshold, brightness=spec.brightness,

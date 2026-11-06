@@ -50,9 +50,7 @@ async function maskFromPng(base64, width, height) { // null for anything that is
 export function createDoodleWidget(options) {
   const info = options.doodle;
   const { width, height } = info;
-  const stickerNames = Object.keys(options.stickers);
-  const designs = Object.fromEntries(stickerNames.map((name) => [name, options.stickers[name].rows]));
-  const doodle = new Doodle({ width, height, inks: info.inks, undoLimit: info.undo_limit, designs, scaleLimits: info.sticker_scale.slice(0, 2), maxStickers: info.max_stickers });
+  const doodle = new Doodle({ width, height, inks: info.inks, undoLimit: info.undo_limit });
 
   const overlay = el("canvas", { className: "overlay", width, height, hidden: true });
   overlay.setAttribute("aria-label", "Draw on the label");

@@ -99,7 +99,7 @@ async function main() {
     const started = performance.now();
     try {
       const path = await engine.addImage(new Uint8Array(await file.arrayBuffer()), file.name);
-      layersUi.usePicture(path, file.name, replace);
+      if (!layersUi.usePicture(path, file.name, replace)) return; // (the label is full: the widget said so)
       status("");
       await refresh();
       const seconds = (performance.now() - started) / 1000;
@@ -109,7 +109,7 @@ async function main() {
     }
   }
   const picture = createImageWidget(useFile, (text) => status(text, true));
-  const layersUi = createLayersWidget(options, { image: picture.make, fonts: (select) => previewFonts(select, options.fonts) });
+  const layersUi = createLayersWidget(options, { image: picture.make, fonts: (select) => previewFonts(select, options.fonts), say: status });
   const doodle = createDoodleWidget(options);
   document.querySelector(".paper").append(layersUi.overlay, doodle.overlay);
   let activeTab = "";

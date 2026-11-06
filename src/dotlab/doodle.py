@@ -88,7 +88,6 @@ INKS = {  # dither tiles, 4x4 or 8x8 ("#" is ink), anchored to the label so neig
 USES_INK = ("pen", "square", "italic", "line", "box", "oval", "fbox", "foval", "fill")  # tools that paint with the chosen pattern
 USES_BRUSH = ("pen", "square", "italic", "spray", "line", "box", "oval", "fbox", "foval", "eraser")  # tools that have a width
 BRUSH = (1, 24, 4)  # width in dots: smallest, largest, start
-STICKER_SCALE = (1, 9, 2)  # stickers are enlarged by whole numbers: smallest, largest, start
 UNDO_LIMIT = 30
 SPRAY_MS = 25  # how often the spray can sprays while the button is held
 LABELS = {
@@ -108,5 +107,5 @@ def describe() -> dict:
         "width": W, "height": SH,
         "tools": [[t, LABELS[t]] for t in TOOLS], "inks": [[i, LABELS[i], list(rows)] for i, rows in INKS.items()],
         "grid": GRID, "uses_ink": list(USES_INK), "uses_brush": list(USES_BRUSH),
-        "brush": list(BRUSH), "sticker_scale": list(STICKER_SCALE), "max_stickers": stickers.MAX_PLACED, "undo_limit": UNDO_LIMIT, "spray_ms": SPRAY_MS,
+        "brush": list(BRUSH), "undo_limit": UNDO_LIMIT, "spray_ms": SPRAY_MS,
     }

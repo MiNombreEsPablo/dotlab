@@ -2,7 +2,7 @@
 // stickers), one inspector for whichever is selected, and the selection box over the preview (drag to move, the corner
 // handle resizes, arrows nudge, Delete removes). The Paper (background, border, bars) is the last entry of the list and is
 // edited in the same inspector. The controls of each layer type come from api.options()["form"]["layer_fields"].
-//   createLayersWidget(options, { image(field, notify) -> control, fonts(select) }) ->
+//   createLayersWidget(options, { image(field, notify) -> control, fonts(select), say(text, isError) }) ->
 //     { make(field, notify) -> control, overlay, setPaper(rows), setActive(on), usePicture(path, name, replace) }
 // The control's value is the label's `layers` text: JSON, bottom to top, only what differs from the defaults (see layers.py).
 
@@ -91,6 +91,7 @@ export function createLayersWidget(options, hooks) {
     list.replaceChildren();
     for (let i = items.length - 1; i >= 0; i--) list.append(row(i, items[i]));
     list.append(el("li", { className: "layer paper-entry" }, rowButton(PAPER, "Paper", "Background, border, bars")));
+    for (const button of addButtons) button.disabled = items.length >= max;
   }
   function rowButton(index, title, subtitle) {
     const button = el("button", { type: "button", className: "layer-row" },
@@ -103,9 +104,9 @@ export function createLayersWidget(options, hooks) {
     const shown = el("input", { type: "checkbox", checked: !item.hidden, className: "layer-show" });
     shown.title = "Show or hide this layer";
     shown.setAttribute("aria-label", `Show ${KINDS[item.t]} layer`);
-    shown.addEventListener("input", () => {
+    shown.addEventListener("input", () => { // (the list is not rebuilt: that would take the keyboard focus away from this box)
       item.hidden = !shown.checked;
-      emit();
+      emitLight();
     });
     return el("li", { className: "layer" }, shown, rowButton(index, KINDS[item.t], nameOf(item)));
   }
@@ -118,7 +119,10 @@ export function createLayersWidget(options, hooks) {
   }
 
   function add(type, over = {}) {
-    if (items.length >= max) return false;
+    if (items.length >= max) {
+      hooks.say(`A label can have ${max} layers at most: delete one first.`, true);
+      return false;
+    }
     const area = { x: MARGIN, y: MARGIN, w: W - 2 * MARGIN, h: SH - 2 * MARGIN };
     let box = area;
     if (type === "text" && items.some((l) => l.t === "text")) box = { ...area, y: Math.round(SH / 2), h: Math.round(SH / 2) - MARGIN };
@@ -130,26 +134,38 @@ export function createLayersWidget(options, hooks) {
     }
     items.push(item);
     selected = items.length - 1;
-    emit();
+    notifyForm();
     select(selected);
     return true;
   }
 
+  const addButtons = [];
   for (const type of types) {
     const button = el("button", { type: "button", className: "gel" }, `+ ${KINDS[type]}`);
     button.title = `Add a ${KINDS[type].toLowerCase()} layer`;
     button.addEventListener("click", () => add(type));
     addBar.append(button);
+    addButtons.push(button);
   }
 
   function emit() { // the label changed: the form hears of it, the list and the selection box follow
     renderList();
+    emitLight();
+  }
+  function emitLight() { // the same, when nothing the list shows has changed (a drag, a nudge, a show/hide)
     updateOverlay();
     notifyForm();
   }
 
   // --- the inspector ----------------------------------------------------------------------------------------------------
+  let picker = null; // the sticker picker is built once (about 80 canvases) and reused by every sticker layer
   function stickerPicker(field, notify) {
+    if (!picker) picker = buildStickerPicker();
+    picker.notify = notify;
+    return picker.control;
+  }
+  function buildStickerPicker() {
+    const self = { notify: () => {}, control: null };
     let value = "";
     const buttons = new Map();
     const grid = el("div", { className: "sticker-groups" });
@@ -170,14 +186,15 @@ export function createLayersWidget(options, hooks) {
         button.addEventListener("click", () => {
           value = name;
           show();
-          notify();
+          self.notify();
         });
         buttons.set(name, button);
         part.append(button);
       }
     }
     const show = () => buttons.forEach((b, name) => b.setAttribute("aria-pressed", String(name === value)));
-    return { root: grid, get: () => value, set: (v) => { value = v; show(); if (sections.has(v)) sections.get(v).open = true; }, disable() {} };
+    self.control = { root: grid, get: () => value, set: (v) => { value = v; show(); if (sections.has(v)) sections.get(v).open = true; }, disable() {} };
+    return self;
   }
 
   function buildInspector() {
@@ -255,21 +272,21 @@ export function createLayersWidget(options, hooks) {
     if (to < 0 || to >= items.length) return;
     [items[selected], items[to]] = [items[to], items[selected]];
     selected = to;
-    emit();
+    notifyForm();
     select(selected);
   }
   function duplicate() {
     if (items.length >= max) return;
     const copy = { ...items[selected], x: items[selected].x + 8, y: items[selected].y + 8 };
     items.splice(selected + 1, 0, copy);
-    emit();
+    notifyForm();
     select(selected + 1);
   }
   function remove() {
     if (!items[selected]) return;
     items.splice(selected, 1);
     selected = items.length ? Math.min(selected, items.length - 1) : NONE;
-    emit();
+    notifyForm();
     select(selected);
   }
 
@@ -334,14 +351,14 @@ export function createLayersWidget(options, hooks) {
       item.y = start.y + dy;
     } else if (item.t === "sticker") {
       const side = stickerSide(start) + Math.max(dx, dy);
-      item.scale = clamp(Math.round(side / (stickerSide(start) / start.scale)), 1, options.doodle.sticker_scale[1]);
+      item.scale = clamp(Math.round(side / (stickerSide(start) / start.scale)), 1, options.layers.max_scale);
       [item.w, item.h] = sizeOf(item);
     } else {
       item.w = clamp(start.w + dx, minBox, W);
       item.h = event.shiftKey ? clamp(Math.round((item.w * start.h) / start.w), minBox, SH) : clamp(start.h + dy, minBox, SH);
     }
     syncBox();
-    emit();
+    emitLight();
   });
   const release = () => { drag = null; };
   overlay.addEventListener("pointerup", release);
@@ -356,7 +373,7 @@ export function createLayersWidget(options, hooks) {
       item.x += move[0];
       item.y += move[1];
       syncBox();
-      emit();
+      emitLight();
     } else if (event.key === "Delete" || event.key === "Backspace") {
       event.preventDefault();
       remove();
@@ -402,7 +419,9 @@ export function createLayersWidget(options, hooks) {
         item.path = path;
         emit();
         buildInspector();
-      } else add("image", { path });
+        return true;
+      }
+      return add("image", { path }); // (at the limit, add says so and this is false)
     },
     selectedImage: () => !!(items[selected] && items[selected].t === "image"),
   };

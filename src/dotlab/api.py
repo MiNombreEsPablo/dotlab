@@ -109,8 +109,9 @@ def fonts_needed(raw: str | bytes | dict) -> list[str]:
     label = label_from_json(raw)
     families = [(label.font, label.bold, label.italic)] if not label.layers else []
     families += [(l.font, l.bold, l.italic) for l in layers.parse(label.layers) if l.t == "text"]
-    wanted = [render.font_path(*family)[0] for family in families] + [fonts.FALLBACK_JA.pick(label.bold, False)[0],
-              *render.FALLBACK_FONT_PATHS]
+    wanted = [render.font_path(*family)[0] for family in families]
+    wanted += [fonts.FALLBACK_JA.pick(bold, False)[0] for bold in dict.fromkeys(bold for _, bold, _ in families)]
+    wanted += render.FALLBACK_FONT_PATHS
     if label.background in render.BACKGROUND_FONTS:  # a pattern made of text, such as the matrix rain
         wanted.append(render.font_path(render.BACKGROUND_FONTS[label.background], False)[0])
     names: list[str] = []
@@ -146,7 +147,7 @@ def options() -> str:
         "sticker_groups": [{"label": title, "stickers": list(keys)} for title, keys in stickers.GROUPS],
         "doodle": doodle.describe(),
         "defaults": asdict(spec.LabelSpec()),
-        "layers": {"types": layers.TYPES, "max": layers.MAX_LAYERS, "min_box": layers.MIN_BOX,
+        "layers": {"types": layers.TYPES, "max": layers.MAX_LAYERS, "max_scale": stickers.MAX_SCALE, "min_box": layers.MIN_BOX,
                    "defaults": {t: asdict(layers.Layer(t)) for t in layers.TYPES}},
         "export": {"scales": [[s, spec.export_size_name(s)] for s in spec.EXPORT_SCALES], "extension": ".png"},
         "app": {"name": "Dotlab", "version": __version__, "repo_url": about.REPO_URL,

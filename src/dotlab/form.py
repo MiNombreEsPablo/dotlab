@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from . import fonts, layers, spec
+from . import fonts, layers, spec, stickers
 
 LABELS = {  # how a choice is worded when `value.capitalize()` isn't enough
     "3d": "3D WordArt", "grid": "Graph paper", "dots": "Polka dots", "bevel": "Win95 bevel",
@@ -144,7 +144,7 @@ LAYER_FIELDS = (
     Field("invert", "toggle", "Invert", "image", row="Options"),
     Field("data", "text", "QR", "qr", tip="Anything a phone can scan: a link, a Wi-Fi code, some words"),
     Field("name", "sticker", "Sticker", "sticker"),  # the picker is the client's own (api.options()["sticker_groups"])
-    Field("scale", "slider", "Size", "sticker", minimum=1, maximum=9, suffix="×"),
+    Field("scale", "slider", "Size", "sticker", minimum=1, maximum=stickers.MAX_SCALE, suffix="×"),
 )
 
 

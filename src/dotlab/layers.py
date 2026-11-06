@@ -91,6 +91,8 @@ def _clean(raw) -> Layer | None:
         elif isinstance(base, float):
             ok = isinstance(value, (int, float)) and not isinstance(value, bool)
         elif isinstance(base, int):
+            if isinstance(value, float) and abs(value) < LIMIT:  # a box edited by hand or by another client: round it
+                value = round(value)
             ok = isinstance(value, int) and not isinstance(value, bool)
         else:
             ok = isinstance(value, str)
@@ -157,3 +159,9 @@ def has_content(text: str) -> bool:
     """Is any visible layer saying something: text that isn't blank, a QR code, a picture or a sticker?"""
     return any(not layer.hidden and (layer.text.strip() or layer.data.strip() or layer.path or layer.name)
                for layer in parse(text))
+
+
+def map_paths(text: str, change) -> str:
+    """The layers with every picture path replaced by change(path) (paths that are empty are left alone)."""
+    return encode([_replace(layer, path=change(layer.path)) if layer.t == "image" and layer.path else layer
+                   for layer in parse(text)])

@@ -28,6 +28,7 @@ FORMAT = "dotlab-label"
 KEY = "dotlab"  # the name of the PNG text chunk
 VERSION = 2  # 2: layers (a label file of version 1 still opens)
 SUFFIX = ".png"
+TOKEN = "embedded:"  # what a layer's picture path says in a label file: the key of the picture stored beside the design
 # Pillow refuses text chunks over 1 MB by default; a design with a photo in it is bigger. The file is the user's own.
 PngImagePlugin.MAX_TEXT_CHUNK = 64 * 1024 * 1024
 PngImagePlugin.MAX_TEXT_MEMORY = 128 * 1024 * 1024
@@ -40,19 +41,25 @@ def dumps(spec: LabelSpec) -> bytes:
     try:
         picture = label_bitmap(spec)  # rendered with the real image path, before it is replaced by the embedded bytes
     except PrinterError:  # the picture is gone from disk: still save the design, with a preview that lacks it
-        picture = label_bitmap(replace(spec, image_path=""))
+        picture = label_bitmap(replace(spec, image_path="", layers=layers.map_paths(spec.layers, lambda _: "")))
     data = {"format": FORMAT, "version": VERSION, "spec": asdict(spec)}
     source = Path(spec.image_path) if spec.image_path else None
     if source and source.is_file():
         data["image"] = {"name": source.name, "data": base64.b64encode(source.read_bytes()).decode("ascii")}
         data["spec"]["image_path"] = ""  # a path on this machine means nothing in the file; the bytes travel instead
-    extra = {}  # the pictures of image layers: by layer index, embedded like the legacy one
-    for index, path in layers.image_paths(spec.layers).items():
-        if Path(path).is_file():
-            extra[str(index)] = {"name": Path(path).name, "data": base64.b64encode(Path(path).read_bytes()).decode("ascii")}
+    embedded: dict[str, str] = {}  # picture path -> the token that stands for it in the layers ("" when the file is gone)
+
+    def token(path: str) -> str:
+        if path not in embedded:
+            embedded[path] = f"{TOKEN}{len(embedded)}" if Path(path).is_file() else ""  # a path on this machine means nothing in the file
+        return embedded[path]
+
+    if spec.layers:
+        data["spec"]["layers"] = layers.map_paths(spec.layers, token)
+    extra = {tok: {"name": Path(path).name, "data": base64.b64encode(Path(path).read_bytes()).decode("ascii")}
+             for path, tok in embedded.items() if tok}  # once per picture, however many layers use it
     if extra:
         data["layer_images"] = extra
-        data["spec"]["layers"] = layers.with_paths(spec.layers, {i: "" for i in layers.image_paths(spec.layers)})
     info = PngImagePlugin.PngInfo()
     info.add_text(KEY, json.dumps(data, separators=(",", ":")), zip=True)
     out = io.BytesIO()
@@ -88,15 +95,15 @@ def loads(blob: bytes, image_dir: Path | None = None) -> LabelSpec:
             raise ValueError("the embedded image is damaged") from e
         spec.image_path = str(_store_image(str(image.get("name", "")), embedded, image_dir))
     extra = data.get("layer_images")
-    if isinstance(extra, dict) and spec.layers:
-        paths = {}
-        for key, item in extra.items():
+    if spec.layers:
+        stored: dict[str, str] = {}
+        for key, item in (extra.items() if isinstance(extra, dict) else ()):
             try:
                 blob = base64.b64decode(item.get("data", ""), validate=True)
-                paths[int(key)] = str(_store_image(str(item.get("name", "")), blob, image_dir))
+                stored[key] = str(_store_image(str(item.get("name", "")), blob, image_dir))
             except (AttributeError, TypeError, ValueError, binascii.Error) as e:
                 raise ValueError("an embedded image is damaged") from e
-        spec.layers = layers.with_paths(spec.layers, paths)
+        spec.layers = layers.map_paths(spec.layers, lambda path: stored.get(path, "" if path.startswith(TOKEN) else path))
     return spec
 
 

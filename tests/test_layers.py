@@ -117,3 +117,59 @@ def test_empty_hidden_layers_are_not_content_but_anything_visible_and_said_is():
     assert not s.has_content(core.LabelSpec(layers=layers.encode([layers.Layer("text"), layers.Layer("qr", data="  ")])))
     assert not s.has_content(core.LabelSpec(layers=layers.encode([layers.Layer("text", text="x", hidden=True)])))
     assert s.has_content(core.LabelSpec(layers=layers.encode([layers.Layer("text"), layers.Layer("qr", data="x")])))
+
+
+# --- regressions found by the review of the layers branch -------------------------------------------------------------------
+
+
+def test_the_regular_weight_japanese_fallback_is_fetched_for_a_regular_text_layer():
+    from dotlab import api, fonts
+    regular = layers.encode([layers.Layer("text", text="あ", font="Orbitron", bold=False)])
+    bold = layers.encode([layers.Layer("text", text="あ", font="Orbitron", bold=True)])
+    from pathlib import PurePath
+    assert PurePath(fonts.FALLBACK_JA.pick(False, False)[0]).name in api.fonts_needed({"layers": regular})
+    assert PurePath(fonts.FALLBACK_JA.pick(True, False)[0]).name in api.fonts_needed({"layers": bold})
+
+
+def test_a_sticker_over_the_frame_migrates_to_the_same_pixels():
+    label = core.LabelSpec(text="Hi", border=True, bars=True, stickers='[["star",8,8,3],["heart",376,216,2]]')
+    assert render.render(label).tobytes() == render.render(render.migrate(label)).tobytes()
+
+
+def test_legacy_stickers_are_ignored_once_there_are_layers():
+    text = layers.encode([layers.Layer("text", 8, 8, 368, 208, text="Hi")])
+    assert core.render(core.LabelSpec(layers=text, stickers='[["star",100,100,4]]')).tobytes() == core.render(core.LabelSpec(layers=text)).tobytes()
+
+
+def test_the_frame_is_over_pictures_but_under_stickers(picture):
+    from dotlab import stickers
+    star = layers.sticker_layer("star", 60, 7, 1)  # on the top hazard bar (14 dots high), which has white stripes
+    ink = stickers.mask("star", 1)
+    left, top = star.x, star.y
+    covered = [(left + x, top + y) for y in range(ink.height) for x in range(ink.width) if ink.getpixel((x, y)) and 0 <= top + y < 14]
+    assert covered
+    with_sticker = core.render(core.LabelSpec(bars=True, layers=layers.encode([star])))
+    assert all(with_sticker.getpixel(p) == 0 for p in covered)  # the sticker's ink survives: the bar is under it
+    cover = layers.Layer("image", 0, 0, 384, 224, path=picture, fit="cover")
+    over = core.render(core.LabelSpec(bars=True, layers=layers.encode([cover])))
+    bare = core.render(core.LabelSpec(layers=layers.encode([cover])))
+    assert over.crop((0, 0, 384, 14)).tobytes() != bare.crop((0, 0, 384, 14)).tobytes()  # the bar is over the picture
+
+
+def test_a_picture_used_by_several_layers_is_embedded_once_and_a_missing_one_is_blanked(picture, tmp_path):
+    import json
+
+    from dotlab import composition
+    one = layers.Layer("image", 0, 0, 100, 100, path=picture)
+    text = layers.encode([one, layers.Layer("image", 100, 0, 100, 100, path=picture), layers.Layer("image", 0, 100, 50, 50, path="/nope/gone.png")])
+    blob = composition.dumps(core.LabelSpec(layers=text))
+    inside = json.loads(Image.open(__import__("io").BytesIO(blob)).text["dotlab"])
+    assert len(inside["layer_images"]) == 1  # not once per layer
+    assert "/nope" not in inside["spec"]["layers"] and picture not in inside["spec"]["layers"]  # nothing of this machine's disk
+    got = layers.parse(composition.loads(blob, tmp_path / "s").layers)
+    assert got[0].path == got[1].path and got[0].path and got[2].path == ""
+
+
+def test_a_box_with_fractional_numbers_is_rounded_not_thrown_away():
+    got = layers.parse('[{"t":"text","x":12.5,"y":3.2,"w":100.6,"h":50.4,"text":"a"}]')[0]
+    assert (got.x, got.y, got.w, got.h) == (12, 3, 101, 50)
