@@ -20,7 +20,7 @@ from pathlib import Path
 
 from PIL import Image, PngImagePlugin
 
-from . import doodle
+from . import doodle, stickers
 from .render import PrinterError, label_bitmap
 from .spec import IMAGE_SUFFIXES, LabelSpec
 
@@ -35,7 +35,7 @@ PngImagePlugin.MAX_TEXT_MEMORY = 128 * 1024 * 1024
 
 def dumps(spec: LabelSpec) -> bytes:
     """The PNG file's bytes: the printed sticker, with the design inside."""
-    spec = replace(spec, doodle=doodle.canonical(spec.doodle))  # compact, whichever client drew it
+    spec = replace(spec, doodle=doodle.canonical(spec.doodle), stickers=stickers.canonical(spec.stickers))  # compact, whichever client drew it
     try:
         picture = label_bitmap(spec)  # rendered with the real image path, before it is replaced by the embedded bytes
     except PrinterError:  # the picture is gone from disk: still save the design, with a preview that lacks it

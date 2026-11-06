@@ -61,7 +61,8 @@ def preset_entry(name: str, raw: str | bytes | dict) -> str:
     """What to keep for a preset: {"name": the cleaned name, "spec": the label}, as JSON text. A preset is a style: the
     picture is not kept (a picture lives in a saved label file), and the doodle is stored compactly. ValueError with a
     sentence for a bad name."""
-    label = replace(label_from_json(raw), image_path="", doodle=doodle.canonical(label_from_json(raw).doodle))
+    label = replace(label_from_json(raw), image_path="", doodle=doodle.canonical(label_from_json(raw).doodle),
+                    stickers=stickers.canonical(label_from_json(raw).stickers))
     return json.dumps({"name": presets.clean_name(name), "spec": asdict(label)})
 
 
@@ -133,6 +134,7 @@ def options() -> str:
             name: {"label": label, "rows": ["".join("1" if p else "0" for p in row) for row in _rows(name)]}
             for name, (label, _) in stickers.STICKERS.items()
         },
+        "sticker_groups": [{"label": title, "stickers": list(keys)} for title, keys in stickers.GROUPS],
         "doodle": doodle.describe(),
         "defaults": asdict(spec.LabelSpec()),
         "export": {"scales": [[s, spec.export_size_name(s)] for s in spec.EXPORT_SCALES], "extension": ".png"},

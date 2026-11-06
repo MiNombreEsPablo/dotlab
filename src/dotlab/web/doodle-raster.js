@@ -60,7 +60,7 @@ function dilate(src, width, height) { // each dot becomes the strongest of its 3
 }
 
 export class Doodle {
-  constructor({ width, height, inks, undoLimit = 30, random = Math.random }) {
+  constructor({ width, height, inks, undoLimit = 30, random = Math.random, designs = {}, scaleLimits = [1, 9], maxStickers = 40 }) {
     this.width = width;
     this.height = height;
     this.inks = Object.fromEntries(inks.map(([name, , rows]) => [name, rows]));
@@ -69,8 +69,17 @@ export class Doodle {
     this.tool = "pen";
     this.brush = 4;
     this.ink = "solid";
-    this.sticker = null; // 24 rows of "0"/"1"
-    this.stickerScale = 2;
+    // Stickers are objects, not ink: placed ones can be selected, moved, resized and removed. `designs` maps a name to its
+    // 24 rows of "0"/"1"; a placed sticker is {name, x, y, scale} with (x, y) its centre, drawn under the ink.
+    this.designs = designs;
+    this.stickerName = Object.keys(designs)[0] || null; // what the next click places
+    this.stickerScale = 2; // and how large
+    this.scaleLimits = scaleLimits;
+    this.maxStickers = maxStickers;
+    this.stickers = [];
+    this.selected = -1;
+    this._drag = null;
+    this._key = null; // the last coalesced edit (a slider drag or a run of arrow keys is one undo step)
     this.pixels = new Uint8Array(width * height);
     this.underlay = null; // 1 where the label itself is dark: the bucket stops there
     this._undo = [];
@@ -83,34 +92,119 @@ export class Doodle {
 
   // --- state -------------------------------------------------------------------------------------------------------
 
-  isEmpty() { return !this.pixels.some((v) => v); }
+  isEmpty() { return !this.stickers.length && !this.pixels.some((v) => v); }
   canUndo() { return this._undo.length > 0; }
   canRedo() { return this._redo.length > 0; }
   setMask(mask) { this.pixels = Uint8Array.from(mask); this._undo = []; this._redo = []; this._start = null; }
+  setStickers(list) { // [{name, x, y, scale}, ...] from a stored label: anything unknown is dropped
+    const [lo, hi] = this.scaleLimits;
+    this.stickers = list.filter((s) => this.designs[s.name]).slice(0, this.maxStickers)
+      .map((s) => ({ name: s.name, x: Math.round(s.x), y: Math.round(s.y), scale: Math.min(hi, Math.max(lo, Math.round(s.scale))) }));
+    this.selected = -1;
+    this._drag = null;
+    this._undo = [];
+    this._redo = [];
+  }
   setUnderlay(dark) { this.underlay = dark; }
 
-  _remember() {
+  _snap() { return { pixels: this.pixels.slice(), stickers: this.stickers.map((s) => ({ ...s })), selected: this.selected }; }
+  _restore(snap) { this.pixels = snap.pixels; this.stickers = snap.stickers; this.selected = snap.selected; this._drag = null; this._key = null; }
+  _push(snap) {
     this._redo = [];
-    this._undo.push(this.pixels.slice());
+    this._undo.push(snap);
     if (this._undo.length > this.undoLimit) this._undo.shift();
+  }
+  _remember() {
+    this._push(this._snap());
+    this._key = null;
   }
   undo() {
     if (!this._undo.length) return false;
-    this._redo.push(this.pixels);
-    this.pixels = this._undo.pop();
+    this._redo.push(this._snap());
+    this._restore(this._undo.pop());
     return true;
   }
   redo() {
     if (!this._redo.length) return false;
-    this._undo.push(this.pixels);
-    this.pixels = this._redo.pop();
+    this._undo.push(this._snap());
+    this._restore(this._redo.pop());
     return true;
   }
-  clear() {
+  clear() { // the ink and the stickers
     if (this.isEmpty()) return false;
     this._remember();
     this.pixels.fill(0);
+    this.stickers = [];
+    this.selected = -1;
     return true;
+  }
+
+  // --- stickers ----------------------------------------------------------------------------------------------------
+
+  _box(s) { // [left, top, right, bottom): the sticker's square, enlarged by whole numbers around its centre
+    const size = this.designs[s.name].length * s.scale;
+    const left = s.x - (size >> 1);
+    const top = s.y - (size >> 1);
+    return [left, top, left + size, top + size];
+  }
+  _forDots(name, scale, centre, put) { // calls put(x, y) for each dot of a design enlarged `scale` times, centred on `centre`
+    const rows = this.designs[name];
+    const [left, top] = this._box({ name, scale, x: centre[0], y: centre[1] });
+    rows.forEach((row, j) => {
+      for (let i = 0; i < row.length; i++) {
+        if (row[i] !== "1") continue;
+        for (let dy = 0; dy < scale; dy++) for (let dx = 0; dx < scale; dx++) put(left + i * scale + dx, top + j * scale + dy);
+      }
+    });
+  }
+  hit(x, y) { // the topmost placed sticker whose square holds this dot, or -1
+    for (let i = this.stickers.length - 1; i >= 0; i--) {
+      const [x0, y0, x1, y1] = this._box(this.stickers[i]);
+      if (x >= x0 && x < x1 && y >= y0 && y < y1) return i;
+    }
+    return -1;
+  }
+  selectedSticker() { return this.selected >= 0 ? this.stickers[this.selected] : null; }
+  deselect() { this.selected = -1; }
+  _clampCentre(v, limit) { return Math.min(limit - 1, Math.max(0, v)); }
+  _edit(key, change) { // one undo step per run of the same kind of edit on the same sticker
+    const sticker = this.selectedSticker();
+    if (!sticker) return false;
+    const before = this._snap();
+    if (!change(sticker)) return false;
+    if (this._key !== key) { this._push(before); this._key = key; }
+    return true;
+  }
+  resizeSelected(scale) {
+    const [lo, hi] = this.scaleLimits;
+    const to = Math.min(hi, Math.max(lo, Math.round(scale)));
+    return this._edit(`scale:${this.selected}`, (s) => s.scale !== to && ((s.scale = to), true));
+  }
+  nudgeSelected(dx, dy) {
+    return this._edit(`nudge:${this.selected}`, (s) => {
+      const x = this._clampCentre(s.x + dx, this.width);
+      const y = this._clampCentre(s.y + dy, this.height);
+      if (x === s.x && y === s.y) return false;
+      s.x = x;
+      s.y = y;
+      return true;
+    });
+  }
+  deleteSelected() {
+    if (!this.selectedSticker()) return false;
+    this._remember();
+    this.stickers.splice(this.selected, 1);
+    this.selected = -1;
+    return true;
+  }
+  _stickerLayer() { // the ink plus every placed sticker, as one mask (a copy)
+    const layer = this.pixels.slice();
+    for (const s of this.stickers) {
+      this._forDots(s.name, s.scale, [s.x, s.y], (x, y) => {
+        if (x >= 0 && y >= 0 && x < this.width && y < this.height) layer[y * this.width + x] = 1;
+      });
+    }
+    return layer;
   }
 
   // --- painting ----------------------------------------------------------------------------------------------------
@@ -194,27 +288,11 @@ export class Doodle {
     }
   }
 
-  _stampDots(centre) { // the sticker enlarged by whole numbers, centred on `centre`: [[x, y], ...]
-    if (!this.sticker) return [];
-    const s = this.stickerScale;
-    const size = this.sticker.length * s;
-    const left = centre[0] - (size >> 1);
-    const top = centre[1] - (size >> 1);
-    const dots = [];
-    this.sticker.forEach((row, j) => {
-      for (let i = 0; i < row.length; i++) {
-        if (row[i] !== "1") continue;
-        for (let dy = 0; dy < s; dy++) for (let dx = 0; dx < s; dx++) dots.push([left + i * s + dx, top + j * s + dy]);
-      }
-    });
-    return dots;
-  }
-
   // The paint bucket: fill the enclosed area around `at`, stopped by ink and by the label's own dark pixels. Patterned
   // lines have gaps, so the walls are thickened to flood against and the filled area is grown back to meet them.
   _bucket(at) {
     const { width, height } = this;
-    const walls = dilate(this.pixels, width, height);
+    const walls = dilate(this.stickers.length ? this._stickerLayer() : this.pixels, width, height);
     if (this.underlay) for (let i = 0; i < walls.length; i++) walls[i] |= this.underlay[i];
     if (walls[at[1] * width + at[0]]) return false; // clicked on a line
     const region = new Uint8Array(walls.length);
@@ -236,8 +314,32 @@ export class Doodle {
   // --- pointer -----------------------------------------------------------------------------------------------------
   // Positions are dots [x, y]. down() and up() return true when the doodle changed.
 
+  _stampDown(x, y) { // click a placed sticker to select it (and drag it); click empty label to place a new one
+    const before = this._snap();
+    const i = this.hit(x, y);
+    this._start = this._now = [x, y];
+    if (i >= 0) {
+      this.selected = i;
+      this._drag = { dx: this.stickers[i].x - x, dy: this.stickers[i].y - y, before, committed: false };
+      return false;
+    }
+    if (!this.stickerName || this.stickers.length >= this.maxStickers) {
+      this.selected = -1;
+      this._drag = null;
+      return false;
+    }
+    this._push(before); // placed: a step of its own; dragging before the button is released only positions it
+    this._key = null;
+    this.stickers.push({ name: this.stickerName, x, y, scale: this.stickerScale });
+    this.selected = this.stickers.length - 1;
+    this._drag = { dx: 0, dy: 0, before, committed: true };
+    return true;
+  }
+
   down(x, y) {
     const at = [x, y];
+    if (this.tool === "stamp") return this._stampDown(x, y);
+    this.selected = -1;
     const redo = this._redo;
     this._remember();
     if (this.tool === "fill") {
@@ -255,6 +357,17 @@ export class Doodle {
     this._hover = [x, y];
     if (!this._start) return;
     this._now = this._hover;
+    if (this._drag) { // moving a sticker
+      const s = this.selectedSticker();
+      const x = this._clampCentre(this._now[0] + this._drag.dx, this.width);
+      const y = this._clampCentre(this._now[1] + this._drag.dy, this.height);
+      if (s && (x !== s.x || y !== s.y)) {
+        if (!this._drag.committed) { this._push(this._drag.before); this._key = null; this._drag.committed = true; }
+        s.x = x;
+        s.y = y;
+      }
+      return;
+    }
     if (["pen", "square", "italic", "eraser"].includes(this.tool)) this._freehand(this.pixels, this._last, this._now);
     this._last = this._now;
   }
@@ -269,8 +382,13 @@ export class Doodle {
     if (!this._start) return false;
     const end = [x, y];
     if (this.tool === "stamp") {
-      for (const [px, py] of this._stampDots(end)) this._dot(this.pixels, px, py, 1, () => true);
-    } else if (["line", "box", "oval"].includes(this.tool)) {
+      this.move(x, y); // the release is part of the drag
+      const changed = !!this._drag && this._drag.committed;
+      this._drag = null;
+      this._start = this._last = this._now = null;
+      return changed;
+    }
+    if (["line", "box", "oval"].includes(this.tool)) {
       this._shape(this.pixels, this._start, end);
     }
     this._start = this._last = this._now = null;
@@ -279,6 +397,7 @@ export class Doodle {
 
   leave() { this._hover = null; }
   cancel() { // a stroke that was interrupted: keep what was drawn, as when the button is released
+    this._drag = null;
     this._start = this._last = this._now = null;
   }
 
@@ -286,12 +405,19 @@ export class Doodle {
 
   // The ink as dots (black unless a look tints it) with alpha, plus what is being dragged out (a rubber-band shape) and the sticker's ghost.
   toRgba(out, ink = [0, 0, 0]) {
-    let layer = this.pixels;
-    let ghost = [];
-    if (this.tool === "stamp" && (this._hover || this._start)) ghost = this._stampDots(this._start ? this._now : this._hover);
-    else if (this._start && ["line", "box", "oval"].includes(this.tool)) {
-      layer = this.pixels.slice();
+    let layer = this.stickers.length ? this._stickerLayer() : this.pixels;
+    const ghost = [];
+    const stamping = this.tool === "stamp";
+    if (stamping && this.stickerName && this._hover && !this._start && this.hit(...this._hover) < 0 && this.stickers.length < this.maxStickers) {
+      this._forDots(this.stickerName, this.stickerScale, this._hover, (x, y) => ghost.push([x, y])); // where a click would place one
+    } else if (this._start && ["line", "box", "oval"].includes(this.tool)) {
+      if (layer === this.pixels) layer = this.pixels.slice();
       this._shape(layer, this._start, this._now);
+    }
+    if (stamping && this.selected >= 0) { // a dotted frame round the selected sticker
+      const [x0, y0, x1, y1] = this._box(this.stickers[this.selected]).map((v, k) => (k < 2 ? v - 2 : v + 1));
+      for (let x = x0; x <= x1; x++) for (const y of [y0, y1]) if ((x + y) % 2 === 0) ghost.push([x, y, 255]);
+      for (let y = y0; y <= y1; y++) for (const x of [x0, x1]) if ((x + y) % 2 === 0) ghost.push([x, y, 255]);
     }
     for (let i = 0; i < layer.length; i++) {
       out[i * 4] = ink[0];
@@ -299,10 +425,10 @@ export class Doodle {
       out[i * 4 + 2] = ink[2];
       out[i * 4 + 3] = layer[i] ? 255 : 0;
     }
-    for (const [x, y] of ghost) {
+    for (const [x, y, alpha = 128] of ghost) {
       if (x < 0 || y < 0 || x >= this.width || y >= this.height) continue;
       const i = (y * this.width + x) * 4;
-      if (!out[i + 3]) out[i + 3] = 128;
+      if (!out[i + 3]) out[i + 3] = alpha;
     }
     return out;
   }

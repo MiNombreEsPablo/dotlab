@@ -52,7 +52,7 @@ seconds (fonts load as you use them), and nothing you make leaves your device. A
   picture left, right, above, below or behind the text (and QR code), with a size control. Floyd–Steinberg, ordered
   (Bayer) crosshatch or hard-cutoff dithering; brightness, contrast, gamma, pixelate, mirror, flip and invert.
   Transparent PNGs print on white and phone photos keep their orientation.
-- **Doodle:** freehand ink on the label with brushes, spray, shapes, fill and 24×24 stickers, with undo and redo (Ctrl+Z, Ctrl+Shift+Z or Ctrl+Y).
+- **Doodle:** freehand ink on the label with brushes, spray, shapes, fill and 12 pixel stickers you can move, resize and delete after placing them (select one and press Delete), with undo and redo (Ctrl+Z, Ctrl+Shift+Z or Ctrl+Y).
 - **Remembers your work:** the label you were designing is back when you reopen the page (its picture isn't kept: *Save* keeps pictures). *File → New label* starts over.
 - **Save and share:** *Save* writes the label as a normal 1-bit **PNG** with the whole design stored inside it. Any
   image viewer or editor opens it as a picture; Dotlab opens it again for editing (*Open label*, or drop it on the
@@ -86,7 +86,8 @@ work to build and to keep working).
 **Next**
 - [ ] `research` Check Print from Chrome/Edge on real Windows and macOS machines, and fix what turns up. Testers wanted.
 - [ ] `useful` Open Recent (the page already remembers the label you were on, minus its picture)
-- [ ] `fun` More stickers (the Doodle tab has 12 so far), and a sticker that can be moved or resized after it is placed
+- [x] `fun` A sticker that can be moved or resized after it is placed
+- [ ] `fun` More stickers, in themed groups (the Doodle tab has 12 so far)
 - [ ] `fun` Poster mode: split one large image across several stickers, with alignment marks
 
 **Later**

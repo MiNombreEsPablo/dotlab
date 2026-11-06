@@ -130,28 +130,172 @@ test("a patterned bucket fill keeps the pattern", () => {
   for (let y = 30; y < 70; y++) for (let x = 30; x < 90; x++) assert.equal(at(d, x, y), (x & 1) === 0 && (y & 1) === 0 ? 1 : 0);
 });
 
-test("a sticker is stamped enlarged by whole numbers, centred where it is released", () => {
-  const d = make();
-  d.sticker = ["11", "10"].concat(Array(22).fill("00")); // 24 rows, three dots set
-  d.sticker = d.sticker.map((row) => row.padEnd(24, "0"));
+const THREE = ["11", "10"].concat(Array(22).fill("00")).map((row) => row.padEnd(24, "0")); // 24 rows, three dots set
+const FULL = Array(24).fill("1".repeat(24));
+const withStickers = (extra = {}) => make({ designs: { three: THREE, full: FULL }, ...extra });
+const rgbaOf = (d) => d.toRgba(new Uint8ClampedArray(W * H * 4));
+const alpha = (rgba, x, y) => rgba[(y * W + x) * 4 + 3];
+
+test("a placed sticker is an object, enlarged by whole numbers around where it is released, not ink", () => {
+  const d = withStickers();
+  d.stickerName = "three";
   d.stickerScale = 2;
-  stroke(d, "stamp", [[100, 100]]);
-  assert.equal(count(d), 3 * 4);
+  assert.equal(stroke(d, "stamp", [[100, 100]]), true);
+  assert.deepEqual(d.stickers, [{ name: "three", x: 100, y: 100, scale: 2 }]);
+  assert.equal(count(d), 0, "the ink is untouched");
+  const rgba = rgbaOf(d);
   const left = 100 - ((24 * 2) >> 1);
-  const top = 100 - ((24 * 2) >> 1);
-  assert.equal(at(d, left, top), 1);
-  assert.equal(at(d, left + 3, top + 1), 1);
-  assert.equal(at(d, left + 3, top + 3), 0); // the sticker's own empty dot
+  const top = left;
+  assert.equal(alpha(rgba, left, top), 255);
+  assert.equal(alpha(rgba, left + 3, top + 1), 255);
+  assert.equal(alpha(rgba, left + 3, top + 3), 0); // the sticker's own empty dot
 });
 
-test("the stamp ghost follows the pointer and is half transparent", () => {
-  const d = make();
-  d.sticker = Array(24).fill("1".repeat(24));
+test("dragging while the button is down positions the new sticker: one undo removes it", () => {
+  const d = withStickers();
+  d.stickerName = "full";
+  stroke(d, "stamp", [[50, 50], [60, 70], [80, 90]]);
+  assert.deepEqual(d.stickers.map((s) => [s.x, s.y]), [[80, 90]]);
+  assert.equal(d.undo(), true);
+  assert.equal(d.stickers.length, 0);
+  assert.equal(d.redo(), true);
+  assert.equal(d.stickers.length, 1);
+});
+
+test("clicking a placed sticker selects it and dragging moves it, keeping the grab offset", () => {
+  const d = withStickers();
+  d.stickerName = "full";
+  d.stickerScale = 2; // 48 dots square
+  stroke(d, "stamp", [[100, 100]]);
+  stroke(d, "stamp", [[200, 100]]);
+  assert.equal(d.stickers.length, 2);
+  assert.equal(stroke(d, "stamp", [[110, 100]]), false, "selecting alone changes nothing");
+  assert.equal(d.selected, 0);
+  assert.equal(d.canUndo(), true); // (the two placements)
+  const steps = d._undo.length;
+  assert.equal(stroke(d, "stamp", [[110, 100], [130, 120]]), true);
+  assert.deepEqual([d.stickers[0].x, d.stickers[0].y], [120, 120]); // grabbed 10 right of the centre, so the centre is 10 left
+  assert.deepEqual([d.stickers[1].x, d.stickers[1].y], [200, 100]);
+  assert.equal(d._undo.length, steps + 1, "a whole drag is one step");
+  d.undo();
+  assert.deepEqual([d.stickers[0].x, d.stickers[0].y], [100, 100]);
+});
+
+test("the topmost sticker is the one picked, and empty label places a new one", () => {
+  const d = withStickers();
+  d.stickerName = "full";
+  stroke(d, "stamp", [[100, 100]]);
+  stroke(d, "stamp", [[110, 100]]); // inside the first one: selects it, places nothing
+  assert.equal(d.stickers.length, 1);
+  stroke(d, "stamp", [[300, 150]]);
+  assert.equal(d.stickers.length, 2);
+  assert.equal(d.selected, 1, "the new one is selected");
+  assert.equal(d.hit(300, 150), 1);
+  assert.equal(d.hit(5, 5), -1);
+});
+
+test("resizing keeps the centre, clamps to the limits, and a slider drag is one undo step", () => {
+  const d = withStickers({ scaleLimits: [1, 9] });
+  d.stickerName = "full";
+  stroke(d, "stamp", [[100, 100]]);
+  const steps = d._undo.length;
+  for (const scale of [3, 4, 5, 6]) assert.equal(d.resizeSelected(scale), true);
+  assert.equal(d.resizeSelected(6), false, "no change, no step");
+  assert.equal(d.stickers[0].scale, 6);
+  assert.deepEqual([d.stickers[0].x, d.stickers[0].y], [100, 100]);
+  assert.equal(d._undo.length, steps + 1);
+  d.resizeSelected(50);
+  assert.equal(d.stickers[0].scale, 9);
+  d.resizeSelected(-4);
+  assert.equal(d.stickers[0].scale, 1);
+  d.undo();
+  assert.equal(d.stickers[0].scale, 2, "back to the size it was placed at");
+});
+
+test("arrow-key nudges stay on the label and coalesce; delete removes the selected sticker and can be undone", () => {
+  const d = withStickers();
+  d.stickerName = "three";
+  stroke(d, "stamp", [[0, 0]]);
+  assert.equal(d.nudgeSelected(-1, -1), false, "already in the corner");
+  for (let i = 0; i < 5; i++) d.nudgeSelected(1, 2);
+  assert.deepEqual([d.stickers[0].x, d.stickers[0].y], [5, 10]);
+  d.undo();
+  assert.deepEqual([d.stickers[0].x, d.stickers[0].y], [0, 0], "five nudges were one step");
+  d.redo();
+  assert.equal(d.deleteSelected(), true);
+  assert.equal(d.stickers.length, 0);
+  assert.equal(d.selected, -1);
+  assert.equal(d.deleteSelected(), false);
+  d.undo();
+  assert.equal(d.stickers.length, 1);
+});
+
+test("other tools deselect, ink and stickers undo together, and clear removes both", () => {
+  const d = withStickers();
+  d.stickerName = "three";
+  stroke(d, "stamp", [[100, 100]]);
+  d.brush = 1;
+  stroke(d, "pen", [[10, 10]]);
+  assert.equal(d.selected, -1);
+  assert.equal(count(d), 1);
+  assert.equal(d.isEmpty(), false);
+  d.undo(); // the dot
+  assert.equal(count(d), 0);
+  assert.equal(d.stickers.length, 1);
+  d.undo(); // the sticker
+  assert.equal(d.isEmpty(), true);
+  d.redo();
+  d.redo();
+  assert.equal(d.clear(), true);
+  assert.equal(d.isEmpty(), true);
+  d.undo();
+  assert.equal(count(d), 1);
+  assert.equal(d.stickers.length, 1);
+});
+
+test("the stamp ghost shows where a click would place one, half transparent, and not over a placed sticker", () => {
+  const d = withStickers();
+  d.stickerName = "full";
+  d.stickerScale = 1;
   d.tool = "stamp";
   d.move(50, 50);
-  const rgba = d.toRgba(new Uint8ClampedArray(W * H * 4));
-  assert.equal(rgba[(50 * W + 50) * 4 + 3], 128);
+  assert.equal(alpha(rgbaOf(d), 50, 50), 128);
   assert.equal(count(d), 0, "a ghost is not ink");
+  stroke(d, "stamp", [[200, 100]]);
+  d.move(200, 100);
+  d.up(200, 100);
+  const rgba = rgbaOf(d);
+  assert.equal(alpha(rgba, 200, 100), 255, "a placed sticker is solid");
+  d.move(205, 100); // over the placed one: a click would grab it, so no ghost
+  assert.equal(alpha(rgbaOf(d), 190, 100), 255);
+  d.move(100, 20);
+  assert.equal(alpha(rgbaOf(d), 100, 20), 128);
+});
+
+test("the selected sticker gets a dotted frame; the bucket treats stickers as walls", () => {
+  const d = withStickers();
+  d.stickerName = "full";
+  d.stickerScale = 2;
+  stroke(d, "stamp", [[100, 100]]);
+  const rgba = rgbaOf(d);
+  assert.equal(alpha(rgba, 100 - 24 - 2, 100 - 24 - 2), 255, "a frame dot just outside the corner");
+  d.deselect();
+  d.tool = "fill";
+  d.down(100, 100); // on the sticker itself
+  assert.equal(count(d), 0);
+  d.down(10, 10); // on the open label: fills everything but the sticker
+  assert.equal(at(d, 10, 10), 1);
+  assert.equal(at(d, 100, 100), 0);
+});
+
+test("a stored sticker list is cleaned: unknown names dropped, scales clamped, no more than the limit", () => {
+  const d = withStickers({ maxStickers: 2 });
+  d.setStickers([{ name: "nope", x: 1, y: 1, scale: 1 }, { name: "full", x: 10.4, y: 20, scale: 99 }, { name: "three", x: 5, y: 5, scale: 0 }, { name: "three", x: 6, y: 6, scale: 2 }]);
+  assert.deepEqual(d.stickers, [{ name: "full", x: 10, y: 20, scale: 9 }, { name: "three", x: 5, y: 5, scale: 1 }]);
+  assert.equal(d.canUndo(), false);
+  d.stickerName = "full";
+  stroke(d, "stamp", [[300, 150]]);
+  assert.equal(d.stickers.length, 2, "full: a click places nothing");
 });
 
 test("spray puts a handful of dots inside its radius, always solid", () => {
@@ -209,9 +353,11 @@ test("drawing at and past the edges never throws and stays on the label", () => 
   d.brush = 24;
   for (const tool of ["pen", "square", "italic", "spray", "eraser"]) stroke(d, tool, [[0, 0], [W - 1, H - 1], [W - 1, 0]]);
   for (const tool of ["line", "box", "oval"]) stroke(d, tool, [[0, 0], [W - 1, H - 1]]);
-  d.sticker = Array(24).fill("1".repeat(24));
-  d.stickerScale = 6;
-  stroke(d, "stamp", [[0, 0]]);
+  const e = withStickers();
+  e.stickerScale = 9;
+  stroke(e, "stamp", [[0, 0], [W - 1, H - 1]]);
+  rgbaOf(e);
+  assert.equal(e.stickers.length, 1);
   assert.equal(d.pixels.length, W * H);
 });
 

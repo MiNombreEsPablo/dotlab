@@ -136,6 +136,7 @@ FIELDS = (
     Field("background", "choice", "Background", "decoration", choices=_choices(spec.BACKGROUNDS)),
     Field("bars", "toggle", "Under-construction bars", "decoration"),
     Field("doodle", "doodle", "Doodle", "doodle"),  # the drawing tools are the client's own; the schema places the tab
+    Field("stickers", "stickers", "Stickers", "doodle"),  # placed with the doodle's Sticker tool; no row of its own
     Field("copies", "number", "Copies", OUTPUT, minimum=1, maximum=99),
     Field("density", "number", "Darkness", OUTPUT, minimum=0, maximum=15),
 )

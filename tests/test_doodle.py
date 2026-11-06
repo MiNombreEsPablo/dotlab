@@ -1,11 +1,12 @@
 import base64
 import io
+import json
 
 import pytest
 from PIL import Image
 
 from dotlab import composition, core, doodle, stickers
-from dotlab.spec import SH, W, LabelSpec
+from dotlab.spec import H, SH, W, LabelSpec, has_content
 
 
 def _mask(*boxes) -> Image.Image:
@@ -122,3 +123,66 @@ def test_a_browser_canvas_png_is_a_valid_doodle():
     mask = doodle.decode(base64.b64encode(out.getvalue()).decode())
     assert mask is not None and mask.getbbox() == (10, 20, 30, 40) and mask.getpixel((15, 25)) == 255
     assert mask.getpixel((0, 0)) == 0
+
+
+# --- placed stickers (LabelSpec.stickers): objects under the ink, not part of it ------------------------------------------
+
+def test_the_largest_sticker_size_fits_the_sticker():
+    assert stickers.GRID * stickers.MAX_SCALE <= SH
+
+
+def test_stickers_text_round_trips_and_bad_entries_are_dropped():
+    placed = (("star", 100, 50, 3), ("heart", -4, 20, 1))
+    assert stickers.parse(stickers.encode(placed)) == placed
+    assert stickers.encode(()) == "" and stickers.parse("") == ()
+    messy = '[["star",1,2,99],["nope",1,2,3],["heart",1,2],["cat","x",2,3],["ghost",true,2,3],5,["sun",1.5,2,3]]'
+    assert stickers.parse(messy) == (("star", 1, 2, stickers.MAX_SCALE),)  # clamped; the rest skipped
+    for junk in ("not json", "{}", "null", "[[", '"star"'):
+        assert stickers.parse(junk) == ()
+    many = stickers.encode([("star", 1, 1, 1)] * (stickers.MAX_PLACED + 5))
+    assert len(stickers.parse(many)) == stickers.MAX_PLACED
+    assert stickers.canonical(messy) == stickers.canonical(stickers.canonical(messy))
+
+
+def test_a_placed_sticker_is_drawn_centred_and_under_the_doodle_ink():
+    text = stickers.encode([("star", 100, 100, 2)])
+    out = core.render(LabelSpec(stickers=text))
+    m = stickers.mask("star", 2)
+    left = 100 - (m.width >> 1)
+    dark = {(x, y) for y in range(H) for x in range(W) if out.getpixel((x, y)) == 0}
+    assert dark == {(left + x, left + y) for y in range(m.height) for x in range(m.width) if m.getpixel((x, y))}
+    # ink is drawn over the sticker: a dot of ink on a bare spot of label shows, and the sticker's other dots are unchanged
+    ink = Image.new("L", (W, SH), 0)
+    ink.putpixel((0, 0), 255)
+    both = core.render(LabelSpec(stickers=text, doodle=doodle.encode(ink)))
+    assert both.getpixel((0, 0)) == 0 and both.getpixel((left + 10, left + 10)) == out.getpixel((left + 10, left + 10))
+
+
+def test_stickers_never_draw_below_the_sticker_or_off_the_label():
+    text = stickers.encode([("star", 380, SH - 1, 9), ("star", 0, 0, 9), ("star", -500, 9000, 3)])
+    out = core.render(LabelSpec(stickers=text))
+    assert out.size == (W, H)
+    assert all(out.getpixel((x, y)) == 255 for y in range(SH, H) for x in range(0, W, 7))
+    assert any(out.getpixel((x, y)) == 0 for y in range(SH) for x in range(W))
+
+
+def test_stickers_alone_are_content_and_travel_in_presets_and_files():
+    from dotlab import api
+
+    text = stickers.encode([("heart", 40, 40, 2)])
+    assert has_content(LabelSpec(stickers=text)) and not has_content(LabelSpec())
+    assert composition.loads(composition.dumps(LabelSpec(stickers=text))).stickers == text
+    entry = json.loads(api.preset_entry("cats", {"stickers": text, "image_path": "x.png"}))
+    assert entry["spec"]["stickers"] == text and entry["spec"]["image_path"] == ""
+    assert api.preview_pixels({"stickers": text}) != api.preview_pixels({})
+    assert LabelSpec.from_dict({"stickers": 5}).stickers == ""
+
+
+def test_every_sticker_is_in_exactly_one_group_and_the_groups_reach_clients():
+    from dotlab import api
+
+    listed = [name for _, keys in stickers.GROUPS for name in keys]
+    assert sorted(listed) == sorted(stickers.STICKERS) and len(listed) == len(set(listed))
+    groups = json.loads(api.options())["sticker_groups"]
+    assert [(g["label"], tuple(g["stickers"])) for g in groups] == list(stickers.GROUPS)
+

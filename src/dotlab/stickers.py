@@ -1,14 +1,18 @@
 """Our own pixel stickers: 24x24 1-bit icons drawn in code (no image files to ship), enlarged with nearest-neighbour.
 
-They are stamped into the doodle ink, so a sticker is just part of the drawing.
+A label carries its placed stickers as `LabelSpec.stickers` (JSON text: `[[name, centre x, centre y, scale], ...]`), so a
+sticker can still be moved, resized or removed after it is placed. They are drawn under the doodle ink.
 """
 from __future__ import annotations
 
+import json
 import math
 from functools import lru_cache
 from typing import Callable
 
 from PIL import Image, ImageDraw
+
+from .spec import SH, W
 
 GRID = 24
 
@@ -92,13 +96,62 @@ STICKERS: dict[str, tuple[str, Callable[[ImageDraw.ImageDraw], None]]] = {
     "arrow": ("Arrow", _arrow), "heart": ("Heart", _heart), "star": ("Star", _star), "smiley": ("Smiley", _smiley),
     "tick": ("Tick", _tick), "cross": ("Cross", _cross),
 }
-MAX_SCALE = 6
+GROUPS = (  # the picker's themes, in order: (title, sticker keys). Every sticker is in exactly one (a test checks).
+    ("Signs & warnings", ("fragile", "up", "warning", "forbidden", "skull", "bolt", "arrow", "tick", "cross")),
+    ("Love & fun", ("heart", "star", "smiley")),
+)
+MAX_SCALE = 9  # 24 x 9 = 216 dots, still inside the sticker's height
+MAX_PLACED = 40  # stickers on one label
 
 
-@lru_cache(maxsize=64)
+@lru_cache(maxsize=512)
 def mask(name: str, scale: int = 2) -> Image.Image:
     """The sticker as an ink mask (mode "L", 0 or 255), `scale` times enlarged. Shared: never modify it."""
     scale = min(MAX_SCALE, max(1, scale))
     img = Image.new("1", (GRID, GRID), 0)
     STICKERS[name][1](ImageDraw.Draw(img))
     return img.convert("L").point([0] * 128 + [255] * 128).resize((GRID * scale,) * 2, Image.Resampling.NEAREST)
+
+
+# --- placed stickers: the label's `stickers` text -------------------------------------------------------------------
+
+
+@lru_cache(maxsize=16)
+def parse(text: str) -> tuple[tuple[str, int, int, int], ...]:
+    """The placed stickers, bottom to top, as (name, centre x, centre y, scale). Anything that isn't a well-formed entry
+    is skipped (stored files may be hand-edited), scales are clamped, and no more than MAX_PLACED are kept."""
+    try:
+        raw = json.loads(text) if text else []
+    except ValueError:
+        return ()
+    if not isinstance(raw, list):
+        return ()
+    placed = []
+    for item in raw:
+        if (isinstance(item, list) and len(item) == 4 and isinstance(item[0], str) and item[0] in STICKERS
+                and all(isinstance(v, int) and not isinstance(v, bool) and abs(v) < 10_000 for v in item[1:])):
+            placed.append((item[0], item[1], item[2], min(MAX_SCALE, max(1, item[3]))))
+    return tuple(placed[:MAX_PLACED])
+
+
+def encode(placed) -> str:
+    """The `stickers` text for these placements, or "" for none."""
+    return json.dumps([list(p) for p in placed], separators=(",", ":")) if placed else ""
+
+
+def canonical(text: str) -> str:
+    """The text in the engine's own form ("" when nothing valid is placed). Idempotent."""
+    return encode(parse(text))
+
+
+def layer(text: str) -> Image.Image | None:
+    """All placed stickers as one ink mask (mode "L", W x SH, 0 or 255), or None when there are none. A sticker that
+    hangs over an edge is cut there."""
+    placed = parse(text)
+    if not placed:
+        return None
+    out = Image.new("L", (W, SH), 0)
+    for name, cx, cy, scale in placed:
+        m = mask(name, scale)
+        out.paste(255, (cx - (m.width >> 1), cy - (m.height >> 1)), m)
+    return out

@@ -12,6 +12,7 @@ from functools import lru_cache
 
 from PIL import Image, UnidentifiedImageError
 
+from . import stickers
 from .spec import SH, W
 
 SIZE = (W, SH)
@@ -60,12 +61,12 @@ INKS = {  # 4x4 dither tiles ("#" is ink), anchored to the label so neighbouring
 USES_INK = ("pen", "square", "italic", "line", "box", "oval", "fill")  # tools that paint with the chosen pattern
 USES_BRUSH = ("pen", "square", "italic", "spray", "line", "box", "oval", "eraser")  # tools that have a width
 BRUSH = (1, 24, 4)  # width in dots: smallest, largest, start
-STICKER_SCALE = (1, 6, 2)  # stickers are enlarged by whole numbers: smallest, largest, start
+STICKER_SCALE = (1, 9, 2)  # stickers are enlarged by whole numbers: smallest, largest, start
 UNDO_LIMIT = 30
 SPRAY_MS = 25  # how often the spray can sprays while the button is held
 LABELS = {
     "pen": "Round brush", "square": "Square brush", "italic": "Calligraphy", "spray": "Spray can", "line": "Line",
-    "box": "Rectangle", "oval": "Ellipse", "fill": "Paint bucket", "stamp": "Sticker", "eraser": "Eraser",
+    "box": "Rectangle", "oval": "Ellipse", "fill": "Paint bucket", "stamp": "Sticker (move & resize)", "eraser": "Eraser",
     "solid": "Solid", "half": "50 % checker", "quarter": "25 % dots", "lines": "Lines", "diagonal": "Diagonal lines",
 }
 
@@ -76,5 +77,5 @@ def describe() -> dict:
         "width": W, "height": SH,
         "tools": [[t, LABELS[t]] for t in TOOLS], "inks": [[i, LABELS[i], list(rows)] for i, rows in INKS.items()],
         "uses_ink": list(USES_INK), "uses_brush": list(USES_BRUSH),
-        "brush": list(BRUSH), "sticker_scale": list(STICKER_SCALE), "undo_limit": UNDO_LIMIT, "spray_ms": SPRAY_MS,
+        "brush": list(BRUSH), "sticker_scale": list(STICKER_SCALE), "max_stickers": stickers.MAX_PLACED, "undo_limit": UNDO_LIMIT, "spray_ms": SPRAY_MS,
     }

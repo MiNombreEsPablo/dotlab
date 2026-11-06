@@ -74,13 +74,13 @@ async function main() {
         again = false;
         // while drawing, the engine renders the label without its doodle: the overlay shows the ink, and the bucket
         // needs the label alone to know where the text is
-        const { pixels, hints } = await engine.preview(activeTab === "doodle" ? { ...spec(), doodle: "" } : spec());
+        const { pixels, hints } = await engine.preview(activeTab === "doodle" ? { ...spec(), doodle: "", stickers: "" } : spec());
         draw(pixels);
         remember();
         if (activeTab === "doodle") doodle.setUnderlay(pixels);
         $("hint").textContent = hints.join(" ");
         $("hint").hidden = hints.length === 0;
-        $("empty").hidden = activeTab === "doodle" || hasContent(spec()) || !!spec().doodle;
+        $("empty").hidden = activeTab === "doodle" || hasContent(spec());
       } while (again);
       if ($("status").classList.contains("error")) status("");
     } catch (e) {
@@ -113,12 +113,12 @@ async function main() {
   let activeTab = "";
   const form = buildForm(options.form, options.defaults, (field) => {
     if (field.tab === "output") return; // copies and darkness don't change the picture
-    if (field.name === "doodle" && activeTab === "doodle") { // the overlay already shows what was drawn
+    if ((field.name === "doodle" || field.name === "stickers") && activeTab === "doodle") { // the overlay already shows what was drawn
       remember();
       return;
     }
     refresh();
-  }, { image: picture.make, doodle: doodle.make }, (id) => {
+  }, { image: picture.make, doodle: doodle.make, stickers: doodle.makeStickers }, (id) => {
     const wasDrawing = activeTab === "doodle";
     activeTab = id;
     doodle.setActive(id === "doodle");
@@ -385,7 +385,7 @@ async function main() {
     { label: "Edit", items: [
       { label: "Paste image", shortcut: "Ctrl+V", display: true, run: () => picture.current().paste() },
       { label: "Clear image", run: clearImage, enabled: () => !!spec().image_path },
-      { label: "Clear doodle", run: () => doodle.current().clear(), enabled: () => !!spec().doodle },
+      { label: "Clear doodle", run: () => doodle.current().clear(), enabled: () => !!(spec().doodle || spec().stickers) },
       "-",
       { label: "Copy label as image", shortcut: "Ctrl+Shift+C", run: copyImage },
     ] },

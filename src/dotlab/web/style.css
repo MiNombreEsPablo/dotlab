@@ -327,6 +327,8 @@ body.dropping .bezel { outline: 3px dashed var(--focus); outline-offset: 4px; }
 .paper { position: relative; }
 .paper .overlay { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; cursor: crosshair; touch-action: none; }
 .doodle-tools .field.wide .row-title { margin-bottom: 2px; }
+.sticker-groups { display: grid; gap: 4px; }
+.group-title { margin-top: 4px; font-size: 0.85em; opacity: 0.8; }
 .stickers { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 6px; }
 .sticker { padding: 4px; line-height: 0; background: var(--btn); border: 2px solid; border-color: var(--raised); border-radius: var(--r-ctl); cursor: pointer; }
 .sticker canvas { width: 28px; height: 28px; image-rendering: pixelated; background: #fff; border-radius: 3px; }
