@@ -18,9 +18,9 @@ from .spec import DEFAULT_FONT, SH, W
 
 TYPES = ("text", "image", "qr", "sticker")
 FITS = ("contain", "cover")  # an image inside its box: whole picture, or filling the box and cropped
-MAX_LAYERS = 40
+MAX_LAYERS = stickers.MAX_PLACED + 8  # what an older label could hold (40 stickers, a picture, a QR code, a text) with room to spare
 MIN_BOX = 8  # the smallest side a box can have, in dots
-LIMIT = 10_000
+LIMIT = 10_000  # how far a box may be moved (and how big a stored number can be)
 
 
 @dataclass(frozen=True)
@@ -106,7 +106,7 @@ def _clean(raw) -> Layer | None:
         side = stickers.size(layer.name) * scale
         layer = _replace(layer, scale=scale, w=side, h=side)
     else:
-        layer = _replace(layer, w=min(LIMIT, max(MIN_BOX, layer.w)), h=min(LIMIT, max(MIN_BOX, layer.h)))
+        layer = _replace(layer, w=min(W, max(MIN_BOX, layer.w)), h=min(SH, max(MIN_BOX, layer.h)))  # (a box is never bigger than the label)
         if layer.fit not in FITS:
             layer = _replace(layer, fit="contain")
     return _replace(layer, x=min(LIMIT, max(-LIMIT, layer.x)), y=min(LIMIT, max(-LIMIT, layer.y)))

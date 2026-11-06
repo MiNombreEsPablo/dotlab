@@ -109,12 +109,13 @@ async function main() {
     }
   }
   const picture = createImageWidget(useFile, (text) => status(text, true));
-  const layersUi = createLayersWidget(options, { image: picture.make, fonts: (select) => previewFonts(select, options.fonts), say: status });
+  const layersUi = createLayersWidget(options, { image: picture.make, fonts: (select) => previewFonts(select, options.fonts), say: status, paper: () => form.read() });
   const doodle = createDoodleWidget(options);
   document.querySelector(".paper").append(layersUi.overlay, doodle.overlay);
   let activeTab = "";
   const form = buildForm(options.form, options.defaults, (field) => {
     if (field.tab === "output") return; // copies and darkness don't change the picture
+    if (field.name === "border_style" || field.name === "bars") layersUi.paperChanged();
     if (field.name === "doodle" && activeTab === "doodle") { // the overlay already shows what was drawn
       remember();
       return;
@@ -155,6 +156,10 @@ async function main() {
     }
   });
   const spec = () => form.read();
+  function writeForm(label) { // every way a whole label arrives (preset, file, last visit, new): the layers learn where the frame is
+    form.write(label);
+    layersUi.syncPaper();
+  }
   $("form").append(form.tabs);
 
   // the printer row belongs to the Output box but differs per client, so it isn't in the form description
@@ -249,7 +254,11 @@ async function main() {
       status(`There is no preset called “${name}”.`, true);
       return reloadPresets();
     }
-    form.write(await engine.migrate(loaded)); // (a preset kept before layers has none)
+    try {
+      writeForm(await engine.migrate(loaded)); // (a preset kept before layers has none)
+    } catch (e) {
+      return status(`Couldn't open the preset “${name}”: ${e.message}`, true);
+    }
     status("");
     await refresh();
   });
@@ -295,7 +304,7 @@ async function main() {
   // the whole label design as a label file (a PNG with the design inside; the picture travels inside it), and back
   async function openLabelFile(file) {
     try {
-      form.write(await engine.compositionLoads(new Uint8Array(await file.arrayBuffer())));
+      writeForm(await engine.compositionLoads(new Uint8Array(await file.arrayBuffer())));
       status(`Opened ${file.name}.`);
       await refresh();
     } catch (e) {
@@ -307,7 +316,7 @@ async function main() {
     if (file.type === "image/png" || file.name.toLowerCase().endsWith(".png")) {
       try {
         const label = await engine.compositionLoads(new Uint8Array(await file.arrayBuffer()));
-        form.write(label);
+        writeForm(label);
         status(`Opened ${file.name}.`);
         return refresh();
       } catch (_) { /* only a picture */ }
@@ -347,7 +356,7 @@ async function main() {
 
   async function newLabel() {
     if (hasContent(spec()) && !confirm("Start a new label? The current one is replaced: use Save first to keep it.")) return;
-    form.write({}); // every control back to its default: one empty text layer, no doodle
+    writeForm({}); // every control back to its default: one empty text layer, no doodle
     $("preset").value = "";
     resetDelete();
     await refresh();
@@ -398,13 +407,17 @@ async function main() {
   ]);
   status("");
   const kept = await store.get("label", null);
+  let restoreNote = "";
   if (kept && kept.spec) {
     try {
-      form.write(await engine.migrate(kept.spec));
+      writeForm(await engine.migrate(kept.spec));
       if (kept.hadPicture) status("Restored your last label. Its picture isn't kept: add it again, or use Save, which keeps pictures.");
-    } catch (_) { /* a label from an older version that doesn't fit: start fresh */ }
+    } catch (e) { // a label that can't be opened: start fresh, and say why
+      restoreNote = `Couldn't restore your last label (${e.message}); starting a new one.`;
+    }
   }
   await refresh();
+  if (restoreNote) status(restoreNote, true);
   // For tests: the label as the page sees it, and whether it is idle.
   window.__dotlab = { client: "web", engine, spec, form, refresh, idle: () => !rendering, pixels: () => last };
 }

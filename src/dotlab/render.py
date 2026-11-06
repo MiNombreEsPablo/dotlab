@@ -606,8 +606,9 @@ def _pick(value: str, allowed: tuple[str, ...], default: str) -> str:
 
 def render(spec: LabelSpec) -> Image.Image:
     """Grayscale W x H canvas; everything is drawn inside the top SH rows."""
-    img = _compose_layers(spec) if spec.layers else _compose(spec)
-    placed = None if spec.layers else stickers.layer(spec.stickers)  # (the legacy field: once there are layers it is ignored)
+    layered = bool(layers.parse(spec.layers))  # (a `layers` that holds no valid layer counts as none: the old fields draw)
+    img = _compose_layers(spec) if layered else _compose(spec)
+    placed = None if layered else stickers.layer(spec.stickers)  # (the legacy field: once there are layers it is ignored)
     if placed is not None:  # placed stickers go under the freehand ink
         img.paste(0, (0, 0), placed)
     ink = doodle.decode(spec.doodle)
@@ -672,7 +673,8 @@ def _compose_layers(spec: LabelSpec) -> Image.Image:
 
 def legacy_layers(spec: LabelSpec) -> str:
     """The `layers` text that draws what the older fields (text, qr, image_*, stickers) describe, with the geometry the
-    old fixed arrangement worked out. Same pixels (stickers too: the frame is under them, as it was), except that "Image only" no longer drops the frame or the text."""
+    old fixed arrangement worked out. Same pixels (stickers too: the frame is under them, as it was). "Image only" kept its picture alone: its text and QR code come
+    along as hidden layers, and the frame, which that layout used to skip, is drawn."""
     out: list[layers.Layer] = []
     layout = _pick(spec.image_layout, IMAGE_LAYOUTS, "only") if spec.image_path else ""
     picture = dict(path=spec.image_path, dither=spec.dither, threshold=spec.threshold, brightness=spec.brightness,
@@ -698,24 +700,27 @@ def legacy_layers(spec: LabelSpec) -> str:
             region = (ax0, ay0, ax1, ay0 + size) if layout == "top" else (ax0, ay1 - size, ax1, ay1)
             ay0, ay1 = (ay0 + size + MARGIN, ay1) if layout == "top" else (ay0, ay1 - size - MARGIN)
         out.append(layers.Layer("image", region[0], region[1], region[2] - region[0], region[3] - region[1], **picture))
-    if layout != "only":
-        text_w = ax1 - ax0
-        if spec.qr:
-            qimg = _qr_image(spec.qr, ay1 - ay0)
-            qx = ax1 - qimg.width if spec.text else ax0 + (text_w - qimg.width) // 2
-            out.append(layers.Layer("qr", qx, ay0 + (ay1 - ay0 - qimg.height) // 2, qimg.width, qimg.height, data=spec.qr))
-            text_w = qx - MARGIN - ax0
-        if spec.text and text_w > 0:
-            out.append(layers.Layer(
-                "text", ax0, ay0, text_w, ay1 - ay0, text=spec.text, font=spec.font, bold=spec.bold,
-                italic=spec.italic, size=spec.size, align=spec.align, valign=spec.valign, effect=spec.effect))
+    hidden = layout == "only"  # "Image only" printed just the picture: the text and QR code are kept, but hidden, not lost
+    text_w = ax1 - ax0
+    if spec.qr:
+        try:
+            side = _qr_image(spec.qr, ay1 - ay0).width
+        except PrinterError:  # too long for a QR code: keep it as a layer anyway; drawing it says so, as it always did
+            side = ay1 - ay0
+        qx = ax1 - side if spec.text else ax0 + (text_w - side) // 2
+        out.append(layers.Layer("qr", qx, ay0 + (ay1 - ay0 - side) // 2, side, side, hidden=hidden, data=spec.qr))
+        text_w = qx - MARGIN - ax0
+    if spec.text and text_w > 0:
+        out.append(layers.Layer(
+            "text", ax0, ay0, text_w, ay1 - ay0, hidden=hidden, text=spec.text, font=spec.font, bold=spec.bold,
+            italic=spec.italic, size=spec.size, align=spec.align, valign=spec.valign, effect=spec.effect))
     return layers.encode(out)
 
 
 def migrate(label: LabelSpec) -> LabelSpec:
     """The label made of layers: what the older fields (text, QR, picture, stickers) describe becomes layers and those
     fields are emptied. A label that has layers already is returned as it is."""
-    if label.layers:
+    if layers.parse(label.layers):
         return label
     found = list(layers.parse(legacy_layers(label)))
     found += [layers.sticker_layer(*placed) for placed in stickers.parse(label.stickers)]

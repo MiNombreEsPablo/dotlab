@@ -99,7 +99,7 @@ def layout_hint(spec: LabelSpec) -> str:
     Empty when there is nothing to say. Shared by every client, so they all word it the same."""
     if spec.image_path and spec.image_layout == "only" and (spec.text or spec.qr):
         what = "text and QR code aren't" if spec.text and spec.qr else ("text isn't" if spec.text else "QR code isn't")
-        return f"The {what} printed: the layout is \u201cImage only\u201d. Dotlab turns old labels into layers when it opens them."
+        return f"The {what} printed: the layout is \u201cImage only\u201d. Opening the label in Dotlab keeps them, as hidden layers you can show."
     return ""
 
 

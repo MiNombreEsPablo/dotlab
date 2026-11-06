@@ -81,7 +81,11 @@ const handlers = {
     }
   },
   async migrate({ spec }) { // a label from before layers -> the same label made of layers (JSON text)
-    return api.migrate(spec);
+    try {
+      return api.migrate(spec);
+    } catch (e) {
+      throw new Error(pythonMessage(e));
+    }
   },
   async presetEntry({ name, spec }) { // what to keep for a preset: {name, spec}
     try {

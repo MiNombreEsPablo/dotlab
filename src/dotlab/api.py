@@ -125,7 +125,8 @@ def options() -> str:
     """JSON describing what a label can be: the allowed choices, the geometry and the bundled fonts. A client builds
     its controls from this instead of repeating the lists."""
     return json.dumps({
-        "geometry": {"width": spec.W, "height": spec.H, "sticker_height": spec.SH, "margin": spec.MARGIN},
+        "geometry": {"width": spec.W, "height": spec.H, "sticker_height": spec.SH, "margin": spec.MARGIN,
+                     "bar_height": render.BAR_H, "border_insets": render.BORDER_INSET},
         "effects": spec.EFFECTS,
         "backgrounds": spec.BACKGROUNDS,
         "border_styles": spec.BORDER_STYLES,

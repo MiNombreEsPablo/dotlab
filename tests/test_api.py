@@ -57,7 +57,9 @@ def test_status_problems_names_the_flags():
 
 def test_options_lists_every_choice_and_font():
     opts = json.loads(api.options())
-    assert opts["geometry"] == {"width": core.W, "height": core.H, "sticker_height": core.SH, "margin": core.MARGIN}
+    assert {k: opts["geometry"][k] for k in ("width", "height", "sticker_height", "margin")} == {
+        "width": core.W, "height": core.H, "sticker_height": core.SH, "margin": core.MARGIN}
+    assert opts["geometry"]["bar_height"] == render.BAR_H and opts["geometry"]["border_insets"] == render.BORDER_INSET
     assert opts["effects"] == list(core.EFFECTS) and opts["backgrounds"] == list(core.BACKGROUNDS)
     assert [f["family"] for f in opts["fonts"]] == [f.family for f in fonts.BUNDLED]
     assert opts["defaults"]["text"] == "" and opts["defaults"]["font"] == opts["default_font"]

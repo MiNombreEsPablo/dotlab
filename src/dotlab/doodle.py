@@ -14,7 +14,6 @@ from functools import lru_cache
 
 from PIL import Image, UnidentifiedImageError
 
-from . import stickers
 from .spec import SH, W
 
 SIZE = (W, SH)

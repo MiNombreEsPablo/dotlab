@@ -41,7 +41,7 @@ def dumps(spec: LabelSpec) -> bytes:
     try:
         picture = label_bitmap(spec)  # rendered with the real image path, before it is replaced by the embedded bytes
     except PrinterError:  # the picture is gone from disk: still save the design, with a preview that lacks it
-        picture = label_bitmap(replace(spec, image_path="", layers=layers.map_paths(spec.layers, lambda _: "")))
+        picture = label_bitmap(replace(spec, image_path="", layers=layers.map_paths(spec.layers, lambda p: p if Path(p).is_file() else "")))
     data = {"format": FORMAT, "version": VERSION, "spec": asdict(spec)}
     source = Path(spec.image_path) if spec.image_path else None
     if source and source.is_file():
@@ -103,7 +103,7 @@ def loads(blob: bytes, image_dir: Path | None = None) -> LabelSpec:
                 stored[key] = str(_store_image(str(item.get("name", "")), blob, image_dir))
             except (AttributeError, TypeError, ValueError, binascii.Error) as e:
                 raise ValueError("an embedded image is damaged") from e
-        spec.layers = layers.map_paths(spec.layers, lambda path: stored.get(path, "" if path.startswith(TOKEN) else path))
+        spec.layers = layers.map_paths(spec.layers, lambda path: stored.get(path, ""))  # a path that is not a picture of this file means nothing here
     return spec
 
 

@@ -39,11 +39,14 @@ def test_legacy_text_and_qr_render_the_same_as_their_layers(text, qr, look):
     _same_as_layers(core.LabelSpec(text=text, qr=qr, **look))
 
 
-def test_image_only_keeps_its_picture_but_no_longer_loses_the_frame(picture):
-    label = core.LabelSpec(text="gone", image_path=picture, border=True)
+def test_image_only_keeps_its_picture_and_its_text_hidden_and_now_draws_the_frame(picture):
+    label = core.LabelSpec(text="kept", qr="https://x.example", image_path=picture, border=True)
     converted = replace(label, layers=render.legacy_layers(label))
-    assert [l.t for l in layers.parse(converted.layers)] == ["image"]
+    got = layers.parse(converted.layers)
+    assert [(l.t, l.hidden) for l in got] == [("image", False), ("qr", True), ("text", True)]  # nothing lost, nothing new printed
     assert render.render(converted).getpixel((1, 100)) == 0  # the border is drawn now
+    shown = layers.encode([replace(l, hidden=False) for l in got])
+    assert render.render(replace(label, layers=shown)).tobytes() != render.render(converted).tobytes()  # unhide: they print
 
 
 def test_two_texts_and_a_sticker_all_draw():
@@ -72,7 +75,7 @@ def test_parse_is_lenient_and_encode_round_trips():
             '{"t":"image","fit":"sideways"}]')
     got = layers.parse(text)
     assert [l.t for l in got] == ["text", "sticker", "image"]
-    assert got[0].w == layers.MIN_BOX and got[0].h == layers.LIMIT and got[0].bold is True
+    assert got[0].w == layers.MIN_BOX and got[0].h == spec.SH and got[0].bold is True  # a box is never bigger than the label
     assert got[1].scale == 9 and got[1].w == got[1].h == 24 * 9 and got[2].fit == "contain"
     assert layers.parse(layers.canonical(text)) == got and layers.canonical(layers.canonical(text)) == layers.canonical(text)
     assert layers.parse("not json") == () and layers.parse("{}") == () and layers.canonical("") == ""
@@ -173,3 +176,59 @@ def test_a_picture_used_by_several_layers_is_embedded_once_and_a_missing_one_is_
 def test_a_box_with_fractional_numbers_is_rounded_not_thrown_away():
     got = layers.parse('[{"t":"text","x":12.5,"y":3.2,"w":100.6,"h":50.4,"text":"a"}]')[0]
     assert (got.x, got.y, got.w, got.h) == (12, 3, 101, 50)
+
+
+# --- second review ----------------------------------------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("junk", ["[]", "null", '[{"t":"sticker","name":"nope"}]'])
+def test_a_layers_text_with_no_valid_layer_leaves_the_old_fields_in_charge(junk):
+    old = core.LabelSpec(text="Hi", stickers='[["star",100,100,2]]')
+    assert render.render(replace(old, layers=junk)).tobytes() == render.render(old).tobytes()
+    assert layers.parse(render.migrate(replace(old, layers=junk)).layers)  # and migration still converts them
+
+
+def test_a_label_with_a_qr_code_too_long_to_draw_still_migrates_and_still_says_so_when_drawn():
+    from dotlab.render import PrinterError
+    old = core.LabelSpec(text="Hi", qr="x" * 5000)
+    moved = render.migrate(old)
+    assert [l.t for l in layers.parse(moved.layers)] == ["qr", "text"]
+    with pytest.raises(PrinterError):
+        render.render(moved)
+
+
+def test_an_old_label_with_the_most_stickers_keeps_every_one_of_them(picture):
+    from dotlab import stickers
+    placed = stickers.encode([("star", 20 + i, 30, 1) for i in range(stickers.MAX_PLACED)])
+    moved = render.migrate(core.LabelSpec(text="Hi", qr="x", image_path=picture, image_layout="left", stickers=placed))
+    assert len(layers.parse(moved.layers)) == stickers.MAX_PLACED + 3
+
+
+def test_a_label_file_cannot_pull_in_a_picture_from_this_machines_disk(picture, tmp_path):
+    import io
+    import json
+
+    from dotlab import composition
+    blob = composition.dumps(core.LabelSpec(layers=layers.encode([layers.Layer("text", text="x")])))
+    inside = json.loads(Image.open(io.BytesIO(blob)).text["dotlab"])
+    inside["spec"]["layers"] = layers.encode([layers.Layer("image", 0, 0, 50, 50, path=picture)])
+    info = __import__("PIL.PngImagePlugin", fromlist=["PngInfo"]).PngInfo()
+    info.add_text(composition.KEY, json.dumps(inside))
+    out = io.BytesIO()
+    Image.open(io.BytesIO(blob)).save(out, format="PNG", pnginfo=info)
+    assert layers.image_paths(composition.loads(out.getvalue(), tmp_path / "s").layers) == {}
+
+
+def test_one_missing_picture_does_not_take_the_others_out_of_the_saved_preview(picture):
+    import io
+
+    from dotlab import composition
+    label = core.LabelSpec(layers=layers.encode([layers.Layer("image", 0, 0, 100, 100, path=picture),
+                                                 layers.Layer("image", 150, 0, 100, 100, path="/nope/gone.png")]))
+    preview = Image.open(io.BytesIO(composition.dumps(label))).convert("L")
+    assert 0 in set(preview.crop((0, 0, 100, 100)).tobytes())  # the picture that is there is in the file's own picture
+
+
+def test_a_box_cannot_be_bigger_than_the_label():
+    got = layers.parse('[{"t":"image","w":10000,"h":10000,"fit":"cover"}]')[0]
+    assert (got.w, got.h) == (spec.W, spec.SH)

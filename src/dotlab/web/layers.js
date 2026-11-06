@@ -2,8 +2,11 @@
 // stickers), one inspector for whichever is selected, and the selection box over the preview (drag to move, the corner
 // handle resizes, arrows nudge, Delete removes). The Paper (background, border, bars) is the last entry of the list and is
 // edited in the same inspector. The controls of each layer type come from api.options()["form"]["layer_fields"].
-//   createLayersWidget(options, { image(field, notify) -> control, fonts(select), say(text, isError) }) ->
-//     { make(field, notify) -> control, overlay, setPaper(rows), setActive(on), usePicture(path, name, replace) }
+//   createLayersWidget(options, { image(field, notify) -> control, fonts(select) -> destroy, say(text, isError), paper() -> the label's
+//   border, border_style and bars }) ->
+//     { make(field, notify) -> control, overlay, setPaper(rows), setActive(on), usePicture(path, name, replace) -> bool,
+//       syncPaper() (after the label was written), paperChanged() (the border or bars changed: layers that fill the old
+//       usable area follow it) }
 // The control's value is the label's `layers` text: JSON, bottom to top, only what differs from the defaults (see layers.py).
 
 import { makeControl, valueOf, startValueOf, layoutFields } from "./form.js";
@@ -55,6 +58,17 @@ export function createLayersWidget(options, hooks) {
   let paperRows = [];
   let active = false;
   let inspectorControls = null; // {group, controls, nodes}: what the inspector shows now
+
+  const { bar_height: barHeight, border_insets: insets } = options.geometry;
+  const area = () => { // what is left inside the hazard bars and the border (as render.py laid the old arrangement out)
+    let paper = {};
+    try { paper = hooks.paper(); } catch (_) { /* the form is still being built: the plain label */ }
+    const top = paper.bars ? barHeight : 0;
+    const bottom = paper.bars ? SH - barHeight : SH;
+    const margin = paper.border ? Math.max(MARGIN, (insets[paper.border_style] ?? 0) + 4) : MARGIN;
+    return { x: margin, y: top + margin, w: W - 2 * margin, h: bottom - top - 2 * margin };
+  };
+  let seenArea = null;
 
   const full = (raw) => {
     const type = types.includes(raw && raw.t) ? raw.t : "text";
@@ -123,9 +137,9 @@ export function createLayersWidget(options, hooks) {
       hooks.say(`A label can have ${max} layers at most: delete one first.`, true);
       return false;
     }
-    const area = { x: MARGIN, y: MARGIN, w: W - 2 * MARGIN, h: SH - 2 * MARGIN };
-    let box = area;
-    if (type === "text" && items.some((l) => l.t === "text")) box = { ...area, y: Math.round(SH / 2), h: Math.round(SH / 2) - MARGIN };
+    const room = area();
+    let box = room;
+    if (type === "text" && items.some((l) => l.t === "text")) box = { ...room, y: room.y + Math.round(room.h / 2), h: Math.round(room.h / 2) };
     if (type === "qr") box = { x: Math.round((W - 120) / 2), y: Math.round((SH - 120) / 2), w: 120, h: 120 };
     const item = full({ ...box, t: type, ...(type === "sticker" ? { name: "star", scale: 3 } : {}), ...over });
     if (type === "sticker") {
@@ -197,7 +211,10 @@ export function createLayersWidget(options, hooks) {
     return self;
   }
 
+  let dropFonts = null; // takes the font picker's page-wide listener off before the inspector is rebuilt
   function buildInspector() {
+    if (dropFonts) dropFonts();
+    dropFonts = null;
     inspector.replaceChildren();
     inspectorControls = null;
     if (selected === PAPER) {
@@ -235,7 +252,7 @@ export function createLayersWidget(options, hooks) {
     inspector.append(el("h3", { className: "inspector-title" }, KINDS[item.t]), ...rows, footer);
     refreshRules();
     const font = controls.get("font");
-    if (font && font.input) hooks.fonts(font.input);
+    if (font && font.input) dropFonts = hooks.fonts(font.input) || null;
   }
 
   function refreshRules() { // show_when / enable_when, as form.js does for the label's own fields
@@ -390,12 +407,13 @@ export function createLayersWidget(options, hooks) {
         let raw = [];
         try { raw = JSON.parse(text || "[]"); } catch (_) { /* damaged: start again */ }
         items = (Array.isArray(raw) ? raw : []).filter((l) => l && typeof l === "object").slice(0, max).map(full);
-        if (!items.length) items = [full({ t: "text", x: MARGIN, y: MARGIN, w: W - 2 * MARGIN, h: SH - 2 * MARGIN })];
+        if (!items.length) items = [full({ t: "text", ...area() })];
         select(items.length - 1);
       },
       disable() {},
     };
     control.set(""); // a first visit starts with one empty text layer
+    seenArea = area();
     return control;
   }
 
@@ -411,6 +429,22 @@ export function createLayersWidget(options, hooks) {
       overlay.hidden = !on;
     },
     isActive: () => active,
+    syncPaper() { seenArea = area(); },
+    paperChanged() { // the frame changed: a text or picture layer that filled the old usable area fills the new one
+      const before = seenArea || area();
+      seenArea = area();
+      let changed = false;
+      for (const item of items) {
+        if ((item.t === "text" || item.t === "image") && item.x === before.x && item.y === before.y && item.w === before.w && item.h === before.h) {
+          Object.assign(item, seenArea);
+          changed = true;
+        }
+      }
+      if (changed) {
+        syncBox();
+        emitLight();
+      }
+    },
     // a picture the user chose, dropped or pasted: `replace` (from a picture control) sets the selected picture layer's
     // picture; otherwise it fills an empty selected picture layer, or becomes a new layer
     usePicture(path, name, replace) {

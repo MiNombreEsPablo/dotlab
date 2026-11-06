@@ -1,9 +1,12 @@
 // The Font dropdown, drawn by us so every font's name shows in its own face.
-//   previewFonts(select, options.fonts)
+//   previewFonts(select, options.fonts) -> destroy()   (call it before the select is thrown away: it takes the page-wide
+//   listener and the observer off again; the font faces are declared once for the page, whoever asks first)
 // Browsers draw a <select>'s list themselves and many ignore per-option fonts (Firefox on Linux, macOS, iOS), so the real
 // <select> stays in the page, hidden, as the one source of truth (its value, its "input" event, form.js's get/set), and a
 // button + list stand in front of it. The faces are declared and fetched only when the pointer or focus first reaches the
 // button: the Japanese ones are 2-3 MB each, and a visitor who never opens the list shouldn't pay for them.
+
+let declaredFaces = false; // the @font-face rules go into the page once, however many pickers are built
 
 export function previewFonts(select, fonts) {
   const name = (family) => `Dotlab preview ${family}`;
@@ -127,12 +130,12 @@ export function previewFonts(select, fonts) {
     event.preventDefault();
   });
   button.addEventListener("blur", () => close(false));
-  addEventListener("pointerdown", (event) => { if (!wrap.contains(event.target)) close(false); });
+  const outside = new AbortController();
+  addEventListener("pointerdown", (event) => { if (!wrap.contains(event.target)) close(false); }, { signal: outside.signal });
 
-  let declared = false;
   const declare = () => {
-    if (declared) return;
-    declared = true;
+    if (declaredFaces) return;
+    declaredFaces = true;
     const style = document.createElement("style");
     style.textContent = fonts.map((f) => {
       const file = f.files.regular || Object.values(f.files)[0];
@@ -144,6 +147,11 @@ export function previewFonts(select, fonts) {
   for (const type of ["pointerenter", "pointerdown", "focus", "keydown"]) button.addEventListener(type, declare, { once: true });
 
   // form.js disables controls through `select.disabled`: mirror it.
-  new MutationObserver(sync).observe(select, { attributes: true, attributeFilter: ["disabled"] });
+  const watcher = new MutationObserver(sync);
+  watcher.observe(select, { attributes: true, attributeFilter: ["disabled"] });
   sync();
+  return () => {
+    outside.abort();
+    watcher.disconnect();
+  };
 }
