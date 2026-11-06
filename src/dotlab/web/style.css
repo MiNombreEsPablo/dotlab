@@ -29,6 +29,12 @@ body {
 .stage { grid-area: stage; }
 .controls { grid-area: controls; }
 @media (max-width: 55.99rem) {
+  /* a phone: the preview stays at the top while you scroll the controls (the stage's own tools scroll away) */
+  .app { grid-template-areas: "menu" "banner" "bezel" "hint" "tools" "controls"; }
+  .stage { display: contents; }
+  .bezel { grid-area: bezel; position: sticky; top: 4px; z-index: 5; }
+  #hint { grid-area: hint; margin-top: 0; }
+  .stage-tools { grid-area: tools; margin-top: 0; }
   .screen { max-width: calc(34vh * 384 / 240); margin: 0 auto; } /* a tall, narrow window: keep the preview from taking it all */
 }
 @media (min-width: 56rem) {
@@ -329,6 +335,8 @@ body.dropping .bezel { outline: 3px dashed var(--focus); outline-offset: 4px; }
 .doodle-tools .field.wide .row-title { margin-bottom: 2px; }
 .sticker-groups { display: grid; gap: 4px; }
 .group-title { margin-top: 4px; font-size: 0.85em; opacity: 0.8; }
+details.sticker-group > summary { margin-top: 4px; padding: 6px 0; font-size: 0.9em; cursor: pointer; }
+details.sticker-group[open] > summary { margin-bottom: 4px; }
 .stickers { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 6px; }
 .sticker { padding: 4px; line-height: 0; background: var(--btn); border: 2px solid; border-color: var(--raised); border-radius: var(--r-ctl); cursor: pointer; }
 .sticker canvas { width: 28px; height: 28px; image-rendering: pixelated; background: #fff; border-radius: 3px; }
@@ -437,6 +445,9 @@ body.dropping .bezel { outline: 3px dashed var(--focus); outline-offset: 4px; }
 .menu-heading { padding: 4px 10px; color: var(--tab-unselected); font-weight: bold; }
 
 @media (pointer: coarse) { /* a finger needs bigger targets than a mouse */
+  .layer-row { min-height: 44px; align-items: center; }
+  .sticker { padding: 6px; }
+  .sel-handle { right: -16px; bottom: -16px; width: 32px; height: 32px; border: 10px solid transparent; background-clip: padding-box; }
   .menu-title { padding: 9px 14px; }
   .menu-item { padding-top: 11px; padding-bottom: 11px; }
 }

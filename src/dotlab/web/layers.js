@@ -153,11 +153,14 @@ export function createLayersWidget(options, hooks) {
     let value = "";
     const buttons = new Map();
     const grid = el("div", { className: "sticker-groups" });
+    const sections = new Map(); // name -> its <details>: the group holding the chosen sticker is the one that is open
     for (const group of options.sticker_groups) {
       const part = el("div", { className: "stickers", role: "group" });
       part.setAttribute("aria-label", group.label);
-      grid.append(el("span", { className: "group-title" }, group.label), part);
+      const section = el("details", { className: "sticker-group" }, el("summary", {}, group.label), part);
+      grid.append(section);
       for (const name of group.stickers) {
+        sections.set(name, section);
         const { label, rows } = options.stickers[name];
         const icon = el("canvas", { width: rows.length, height: rows.length });
         const context = icon.getContext("2d");
@@ -174,7 +177,7 @@ export function createLayersWidget(options, hooks) {
       }
     }
     const show = () => buttons.forEach((b, name) => b.setAttribute("aria-pressed", String(name === value)));
-    return { root: grid, get: () => value, set: (v) => { value = v; show(); }, disable() {} };
+    return { root: grid, get: () => value, set: (v) => { value = v; show(); if (sections.has(v)) sections.get(v).open = true; }, disable() {} };
   }
 
   function buildInspector() {
@@ -195,7 +198,10 @@ export function createLayersWidget(options, hooks) {
     const group = [...mine, ...box];
     const controls = new Map();
     const widgets = { image: hooks.image, sticker: stickerPicker };
-    for (const field of group) controls.set(field.name, makeControl(field, startValueOf(field, item), edited, widgets));
+    for (const field of group) {
+      controls.set(field.name, makeControl(field, startValueOf(field, item), edited, widgets));
+      if (field.kind === "image" || field.kind === "sticker") controls.get(field.name).set(item[field.name]); // (widgets start empty)
+    }
     const { rows, nodes } = layoutFields(group, controls);
     inspectorControls = { group, controls, nodes };
 
