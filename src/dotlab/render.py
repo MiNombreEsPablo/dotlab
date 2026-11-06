@@ -615,6 +615,13 @@ def _picture(spec: LabelSpec, *args, **kwargs) -> Image.Image:
         raise PrinterError(f"Couldn't read the image {spec.image_path}: {e.strerror or e}") from e
 
 
+def _picture_mask(spec: LabelSpec, *args, **kwargs) -> Image.Image | None:
+    try:
+        return imaging.process_mask(spec, *args, **kwargs)
+    except (OSError, UnidentifiedImageError):  # `_picture` has already said what is wrong with the file
+        return None
+
+
 def _qr_image(data: str, side: int) -> Image.Image:
     qr = qrcode.QRCode(border=0, box_size=1, error_correction=qrcode.constants.ERROR_CORRECT_M)
     qr.add_data(data)
@@ -699,7 +706,9 @@ def _compose_layers(spec: LabelSpec) -> Image.Image:
         if layer.t == "image" and layer.path:
             cover = layer.fit == "cover"
             src = _turn(_picture(layer.picture(), (cw, ch), cover=cover), layer.rot)  # (mirror and flip happen inside, before dithering)
-            img.paste(src, (x + (w - src.width) // 2, y + (h - src.height) // 2))
+            solid = _picture_mask(layer.picture(), (cw, ch), cover=cover)  # a PNG's see-through parts keep what is below
+            at = (x + (w - src.width) // 2, y + (h - src.height) // 2)
+            img.paste(src, at, None if solid is None else _turn(solid, layer.rot))
             backdrop = backdrop or cover
         elif layer.t == "qr" and layer.data:
             qimg = _orient(_qr_image(layer.data, min(w, h)), layer)

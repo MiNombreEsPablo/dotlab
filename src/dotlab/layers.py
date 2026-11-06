@@ -53,6 +53,7 @@ class Layer:
     gamma: float = 1.0
     pixelate: int = 0
     invert: bool = False
+    cutout: int = 0  # 0 = off, 1-100: the flat background (the colour along the picture's edge) is see-through
     # qr
     data: str = ""
     # sticker (its box is the sticker as drawn: side x scale)
@@ -64,7 +65,7 @@ class Layer:
         return SimpleNamespace(
             image_path=self.path, dither=self.dither, threshold=self.threshold, brightness=self.brightness,
             contrast=self.contrast, gamma=self.gamma, pixelate=self.pixelate, mirror=self.mirror, flip=self.flip,
-            invert=self.invert)
+            invert=self.invert, cutout=self.cutout)
 
     def to_dict(self) -> dict:
         """Only what differs from the defaults (`t` always)."""

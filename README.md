@@ -48,19 +48,22 @@ seconds (fonts load as you use them), and nothing you make leaves your device. A
 - **Backgrounds:** checker, dots, stripes, dithered gradient, stars, graph paper, scanlines, circuit board, hex grid,
   synthwave sun, vaporwave checkerboard floor, matrix rain, halftone, bricks, waves, zigzag, diamonds, rings, crosshatch, TV static. **Borders:** solid, double, dotted, checker, Win95 bevel, marquee lights,
   cyber panel, HUD brackets, ruler ticks. **Bars:** under-construction hazard stripes.
-- **Layers:** text, pictures, QR codes and stickers are all layers, as many as you like (up to 40). Click one on the label to
+- **Layers:** text, pictures, QR codes and stickers are all layers, as many as you like (up to 48). Click one on the label to
   select it, drag to move, drag the corner to resize, arrow keys nudge and Delete removes it; the same inspector edits any
   of them (position, size, rotate in quarter turns, mirror, flip upside down, order, show/hide, duplicate) plus what is specific to its kind. The **Paper** entry at the
-  bottom of the list holds the background, border and bars. Pictures can be dragged in or pasted, copies, darkness, saved
-  **presets**. A picture layer can fill its box (text over it gets a white halo). Floyd–Steinberg, Atkinson
-  (the crisp first-Mac look), ordered (Bayer) crosshatch or hard-cutoff dithering; brightness, contrast, gamma, pixelate, mirror, flip and invert.
-  Transparent PNGs print on white and phone photos keep their orientation.
+  bottom of the list holds the background, border and bars. Copies, darkness and saved **presets** are next to the Print
+  button.
+- **Pictures:** drag one in, paste it (Ctrl+V) or browse. A picture layer can fill its box (text over it gets a white
+  halo). Floyd–Steinberg, Atkinson (the crisp first-Mac look), ordered (Bayer) crosshatch or hard-cutoff dithering;
+  brightness, contrast, gamma, pixelate, mirror, flip and invert. **Transparent PNGs stay see-through**, so the paper
+  and the layers below show through; **Remove background** does the same for a flat-colour background (a screenshot,
+  a logo on white) with one slider. Phone photos keep their orientation.
 - **Doodle:** freehand ink on the label with brushes, spray, outlined or filled shapes, a paint bucket, 18 dither patterns to paint with (bricks, waves, plus signs, TV static…), Shift for straight lines, squares and circles, a snap-to-grid graph paper mode, with undo and redo (Ctrl+Z, Ctrl+Shift+Z or Ctrl+Y).
 - **Remembers your work:** the label you were designing is back when you reopen the page (its picture isn't kept: *Save* keeps pictures). *File → New label* starts over.
 - **Save and share:** *Save* writes the label as a normal 1-bit **PNG** with the whole design stored inside it. Any
   image viewer or editor opens it as a picture; Dotlab opens it again for editing (*Open label*, or drop it on the
   page). *Copy image* puts the label on the clipboard, at printed size or enlarged 4×.
-- Looks: Y2K candy plastic in blue or pink, gunmetal with LCD-green text, a four-shade olive "handheld" look, or a plain, light
+- Looks: Y2K candy plastic in blue or pink, pastel Vaporwave, gunmetal with LCD-green text, a four-shade olive "handheld" look, or a plain, light
   look that ignores your OS theme.
 
 ## How it works

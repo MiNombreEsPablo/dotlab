@@ -14,7 +14,7 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from PIL import Image, ImageChops, ImageEnhance, ImageOps, UnidentifiedImageError
+from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageOps, UnidentifiedImageError
 
 from .spec import SH, W, LabelSpec
 
@@ -33,11 +33,31 @@ def load_gray(path: str) -> Image.Image:
 @functools.lru_cache(maxsize=2)  # two pictures at most: a 48 MP photo is about 48 MB once decoded
 def _decode(path: str, mtime_ns: int, size: int) -> Image.Image:
     img = ImageOps.exif_transpose(Image.open(path))
-    if img.mode in ("RGBA", "LA", "PA") or (img.mode == "P" and "transparency" in img.info):
+    if _has_alpha(img):
         rgba = img.convert("RGBA")
         flat = Image.new("RGBA", rgba.size, (255, 255, 255, 255))
         img = Image.alpha_composite(flat, rgba)
     return img.convert("L")
+
+
+def load_alpha(path: str) -> Image.Image | None:
+    """Where a picture is solid: an 8-bit mask (255 = opaque, 0 = see-through), or None when the file has no
+    transparency at all. Cached like `load_gray`, and shared: never modify it in place."""
+    stat = os.stat(path)
+    return _decode_alpha(path, stat.st_mtime_ns, stat.st_size)
+
+
+def _has_alpha(img: Image.Image) -> bool:
+    return img.mode in ("RGBA", "LA", "PA") or (img.mode == "P" and "transparency" in img.info)
+
+
+@functools.lru_cache(maxsize=2)
+def _decode_alpha(path: str, mtime_ns: int, size: int) -> Image.Image | None:
+    img = ImageOps.exif_transpose(Image.open(path))
+    if not _has_alpha(img):
+        return None
+    alpha = img.convert("RGBA").getchannel("A").point([0] * 128 + [255] * 128)  # the printer has no half-way: 50 %
+    return alpha if alpha.getextrema()[0] == 0 else None  # fully opaque after all: nothing to cut out
 
 
 def tone(img: Image.Image, gamma: float = 1.0, brightness: int = 0, contrast: int = 0) -> Image.Image:
@@ -152,6 +172,43 @@ def process(spec: LabelSpec, box: tuple[int, int] = (W, SH), cover: bool = False
     if block > 1:
         img = img.resize((img.width * block, img.height * block), Image.Resampling.NEAREST).crop((0, 0, *size))
     return img
+
+
+def _flat_background(gray: Image.Image, tolerance: int) -> Image.Image:
+    """255 where `gray` is the picture's flat background: the commonest tone along its edge, and every pixel within
+    `tolerance` of it that can be reached from the edge without crossing anything else (so the holes inside an "O"
+    stay), 0 elsewhere."""
+    width, height = gray.size
+    px = gray.load()
+    edge = [(x, 0) for x in range(width)] + [(x, height - 1) for x in range(width)]
+    edge += [(0, y) for y in range(1, height - 1)] + [(width - 1, y) for y in range(1, height - 1)]
+    tones = sorted(px[p] for p in edge)
+    tone_at_edge = tones[len(tones) // 2]
+    near = gray.point([255 if abs(v - tone_at_edge) <= tolerance else 0 for v in range(256)])
+    marked = near.load()
+    for point in edge:
+        if marked[point] == 255:
+            ImageDraw.floodfill(near, point, 128)  # (a seed already reached is skipped: its colour is no longer 255)
+    return near.point([255 if v == 128 else 0 for v in range(256)])
+
+
+def process_mask(spec: LabelSpec, box: tuple[int, int] = (W, SH), cover: bool = False) -> Image.Image | None:
+    """The see-through parts of `process(spec, box, cover)`, laid out exactly like it (255 = draw the dot, 0 = leave
+    what is underneath): the file's own transparency, plus the flat background when `cutout` (0 = off, 1-100 = how
+    far from the edge colour still counts as background). None when nothing is see-through."""
+    alpha, cut = load_alpha(spec.image_path), max(0, min(100, getattr(spec, "cutout", 0)))
+    if alpha is None and not cut:
+        return None
+    fit = ImageOps.fit if cover else ImageOps.contain
+    mask = fit(alpha, box) if alpha is not None else Image.new("L", fit(load_gray(spec.image_path), box).size, 255)
+    if cut:
+        gone = _flat_background(fit(load_gray(spec.image_path), box), round(cut * 1.2))
+        mask = ImageChops.subtract(mask, gone)
+    if spec.mirror:
+        mask = ImageOps.mirror(mask)
+    if spec.flip:
+        mask = ImageOps.flip(mask)
+    return mask
 
 
 MAX_PICTURE_BYTES = 40 * 1024 * 1024  # a phone photo is a few MB; this keeps a mistake (a video, an archive) out
