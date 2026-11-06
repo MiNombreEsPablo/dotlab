@@ -232,3 +232,70 @@ def test_one_missing_picture_does_not_take_the_others_out_of_the_saved_preview(p
 def test_a_box_cannot_be_bigger_than_the_label():
     got = layers.parse('[{"t":"image","w":10000,"h":10000,"fit":"cover"}]')[0]
     assert (got.w, got.h) == (spec.W, spec.SH)
+
+
+# --- rotate and flip ----------------------------------------------------------------------------------------------------------
+
+
+def _ink(img, box):
+    region = img.crop(box).point(lambda v: 255 if v < 128 else 0).getbbox()
+    return None if region is None else (region[0] + box[0], region[1] + box[1], region[2] + box[0], region[3] + box[1])
+
+
+def _render(*items, **kw):
+    return core.render(core.LabelSpec(layers=layers.encode(items), **kw))
+
+
+def test_a_quarter_turn_makes_text_stand_up_inside_its_turned_box():
+    flat = _render(layers.Layer("text", 20, 20, 300, 80, text="WIDE"))
+    tall = _render(layers.Layer("text", 20, 20, 80, 190, text="WIDE", rot=90))  # the box turned with it: 80 wide, 190 tall
+    a, b = _ink(flat, (0, 0, 384, 224)), _ink(tall, (0, 0, 384, 224))
+    assert a[2] - a[0] > a[3] - a[1]  # lying down
+    assert b[3] - b[1] > b[2] - b[0]  # standing up
+    assert 20 <= b[0] and b[2] <= 100 and 20 <= b[1] and b[3] <= 210  # and inside its box
+
+
+def test_turns_flips_and_their_compositions_are_exact():
+    base = layers.Layer("text", 20, 20, 200, 120, text="Lg", font="Orbitron")
+    plain = _render(base)
+    assert _render(replace(base, rot=0)).tobytes() == plain.tobytes()
+    assert _render(replace(base, rot=180)).tobytes() == _render(replace(base, mirror=True, flip=True)).tobytes()  # 180° = both flips
+    assert _render(replace(base, rot=180)).tobytes() != plain.tobytes()
+    box = (20, 20, 220, 140)
+    flipped = _render(replace(base, mirror=True)).crop(box)
+    assert flipped.tobytes() == plain.crop(box).transpose(Image.Transpose.FLIP_LEFT_RIGHT).tobytes()
+
+
+def test_a_sticker_mirrors_and_turns_dot_for_dot():
+    from dotlab import stickers
+    mask = stickers.mask("arrow-right", 2)
+    side = mask.width
+    at = (40, 40)
+    def drawn(**kw):
+        layer = replace(layers.sticker_layer("arrow-right", 0, 0, 2), x=at[0], y=at[1], **kw)
+        return _render(layer).crop((at[0], at[1], at[0] + side, at[1] + side))
+    assert 0 in set(drawn().tobytes())  # it is there
+    assert drawn(mirror=True).tobytes() == drawn().transpose(Image.Transpose.FLIP_LEFT_RIGHT).tobytes()
+    assert drawn(rot=90).tobytes() == drawn().transpose(Image.Transpose.ROTATE_270).tobytes()  # clockwise
+    assert drawn(rot=270).tobytes() == drawn().transpose(Image.Transpose.ROTATE_90).tobytes()
+
+
+def test_a_turned_picture_fills_the_turned_box(tmp_path):
+    path = tmp_path / "black.png"
+    Image.new("L", (90, 50), 0).save(path)  # wide
+    got = _render(layers.Layer("image", 50, 10, 100, 200, path=str(path), rot=90))  # in a tall box, turned
+    box = _ink(got, (0, 0, 384, 224))
+    assert box == (50, 20, 150, 200)  # 90x50 fits the box's own 200x100 as 180x100; turned it is 100 wide, 180 tall, centred in the box
+    flat = _render(layers.Layer("image", 50, 10, 200, 100, path=str(path)))
+    assert _ink(flat, (0, 0, 384, 224)) == (60, 10, 240, 110)
+
+
+def test_a_turned_qr_code_is_still_drawn_inside_its_box():
+    got = _render(layers.Layer("qr", 100, 40, 120, 120, data="https://example.com", rot=90, mirror=True))
+    box = _ink(got, (0, 0, 384, 224))
+    assert box is not None and 95 <= box[0] and box[2] <= 225 and 35 <= box[1] and box[3] <= 165
+
+
+def test_a_turn_is_rounded_to_the_nearest_quarter():
+    turns = [l.rot for l in layers.parse('[{"t":"text","rot":100},{"t":"text","rot":-90},{"t":"text","rot":400},{"t":"text","rot":"x"},{"t":"text","rot":270}]')]
+    assert turns == [90, 270, 0, 0, 270]

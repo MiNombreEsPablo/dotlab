@@ -107,7 +107,12 @@ FIELDS = (
 # What the inspector shows for the selected layer: `tab` is the layer type (or "box" for every layer but a sticker), `name`
 # a property of `layers.Layer`. Rules (show_when, enable_when, gate) work as in FIELDS, among the fields of one type.
 BOX = "box"
+ORIENT = "orient"  # turn and mirror: every layer type has these
 LAYER_FIELDS = (
+    Field("rot", "choice", "Rotate", ORIENT, choices=(("0", "0°", ""), ("90", "90° clockwise", ""), ("180", "180°", ""), ("270", "90° anticlockwise", "")),
+          tip="Turns the layer in quarter turns; its box turns with it"),
+    Field("mirror", "toggle", "Mirror", ORIENT, row="Flip", tip="Left to right"),
+    Field("flip", "toggle", "Upside down", ORIENT, row="Flip", tip="Top to bottom"),
     Field("x", "number", "Left", BOX, row="Position", minimum=-spec.W, maximum=spec.W),
     Field("y", "number", "Top", BOX, row="Position", minimum=-spec.SH, maximum=spec.SH),
     Field("w", "number", "Width", BOX, row="Size", minimum=layers.MIN_BOX, maximum=spec.W),
@@ -139,8 +144,6 @@ LAYER_FIELDS = (
           tip="Above 1.0 lightens the mid-tones, below 1.0 darkens them. Double-click to reset."),
     Field("pixelate", "slider", "Pixelate", "image", minimum=0, maximum=32, zero_label="Off", suffix=" dots",
           tip="Chunky blocks, dithered at the low resolution: 3 gives the look of a 90s handheld camera"),
-    Field("mirror", "toggle", "Mirror", "image", row="Options"),
-    Field("flip", "toggle", "Flip", "image", row="Options"),
     Field("invert", "toggle", "Invert", "image", row="Options"),
     Field("data", "text", "QR", "qr", tip="Anything a phone can scan: a link, a Wi-Fi code, some words"),
     Field("name", "sticker", "Sticker", "sticker"),  # the picker is the client's own (api.options()["sticker_groups"])

@@ -50,7 +50,7 @@ seconds (fonts load as you use them), and nothing you make leaves your device. A
   cyber panel, HUD brackets, ruler ticks. **Bars:** under-construction hazard stripes.
 - **Layers:** text, pictures, QR codes and stickers are all layers, as many as you like (up to 40). Click one on the label to
   select it, drag to move, drag the corner to resize, arrow keys nudge and Delete removes it; the same inspector edits any
-  of them (position, size, order, show/hide, duplicate) plus what is specific to its kind. The **Paper** entry at the
+  of them (position, size, rotate in quarter turns, mirror, flip upside down, order, show/hide, duplicate) plus what is specific to its kind. The **Paper** entry at the
   bottom of the list holds the background, border and bars. Pictures can be dragged in or pasted, copies, darkness, saved
   **presets**. A picture layer can fill its box (text over it gets a white halo). Floyd–Steinberg, Atkinson
   (the crisp first-Mac look), ordered (Bayer) crosshatch or hard-cutoff dithering; brightness, contrast, gamma, pixelate, mirror, flip and invert.

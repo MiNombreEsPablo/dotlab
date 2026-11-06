@@ -31,6 +31,9 @@ class Layer:
     w: int = W
     h: int = SH
     hidden: bool = False
+    rot: int = 0  # turned clockwise this many degrees (0, 90, 180, 270): the box is the layer as it lies on the label
+    mirror: bool = False  # left-right (any layer; a picture does it before dithering)
+    flip: bool = False  # top-bottom
     # text
     text: str = ""
     font: str = DEFAULT_FONT
@@ -49,8 +52,6 @@ class Layer:
     contrast: int = 0
     gamma: float = 1.0
     pixelate: int = 0
-    mirror: bool = False
-    flip: bool = False
     invert: bool = False
     # qr
     data: str = ""
@@ -99,6 +100,7 @@ def _clean(raw) -> Layer | None:
         if ok:
             values[name] = value
     layer = Layer(**values)
+    layer = _replace(layer, rot=round(layer.rot / 90) * 90 % 360)  # (quarter turns only: anything else is the nearest)
     if layer.t == "sticker":
         if layer.name not in stickers.STICKERS:
             return None

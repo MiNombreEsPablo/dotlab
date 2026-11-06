@@ -229,7 +229,8 @@ export function createLayersWidget(options, hooks) {
     }
     const mine = layerFields.filter((f) => f.tab === item.t);
     const box = layerFields.filter((f) => f.tab === "box" && (item.t !== "sticker" || f.name === "x" || f.name === "y"));
-    const group = [...mine, ...box];
+    const orient = layerFields.filter((f) => f.tab === "orient");
+    const group = [...mine, ...orient, ...box];
     const controls = new Map();
     const widgets = { image: hooks.image, sticker: stickerPicker };
     for (const field of group) {
@@ -245,6 +246,7 @@ export function createLayersWidget(options, hooks) {
       button.addEventListener("click", run);
       footer.append(button);
     };
+    tool("Rotate", "Turn this layer a quarter turn clockwise", rotate);
     tool("Forward", "Move this layer above the next one", () => moveLayer(1), selected === items.length - 1);
     tool("Back", "Move this layer below the previous one", () => moveLayer(-1), selected === 0);
     tool("Duplicate", "Copy this layer", duplicate, items.length >= max);
@@ -269,9 +271,12 @@ export function createLayersWidget(options, hooks) {
     if (!item || !inspectorControls) return;
     const { group, controls } = inspectorControls;
     const gated = new Set(group.map((f) => f.gate).filter(Boolean));
+    const turned = item.rot;
     for (const f of group) {
       if (!gated.has(f.name)) Object.assign(item, valueOf(f, controls.get(f.name), controls, item));
     }
+    item.rot = Number(item.rot) || 0; // (a choice's value is text)
+    if ((item.rot / 90) % 2 !== (turned / 90) % 2) swapBox(item); // a quarter turn turns the box too
     if (item.t === "sticker") [item.w, item.h] = sizeOf(item);
     refreshRules();
     emit();
@@ -282,6 +287,24 @@ export function createLayersWidget(options, hooks) {
     for (const [name, control] of inspectorControls.controls) {
       if (["x", "y", "w", "h", "scale"].includes(name)) control.set(item[name]);
     }
+  }
+
+  function swapBox(item) { // a quarter turn about the box's centre: wide becomes tall (a sticker is square: nothing to do)
+    if (item.t === "sticker") return;
+    const [cx, cy] = [item.x + item.w / 2, item.y + item.h / 2];
+    const room = area(); // (a turned box stays inside the frame: a wide box turned would otherwise run under the bars)
+    [item.w, item.h] = [clamp(item.h, minBox, room.w), clamp(item.w, minBox, room.h)];
+    item.x = clamp(Math.round(cx - item.w / 2), room.x, room.x + room.w - item.w);
+    item.y = clamp(Math.round(cy - item.h / 2), room.y, room.y + room.h - item.h);
+    syncBox();
+  }
+  function rotate() {
+    const item = items[selected];
+    if (!item) return;
+    item.rot = (item.rot + 90) % 360;
+    swapBox(item);
+    if (inspectorControls && inspectorControls.controls.has("rot")) inspectorControls.controls.get("rot").set(String(item.rot));
+    emit();
   }
 
   function moveLayer(by) {
