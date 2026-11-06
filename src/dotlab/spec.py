@@ -59,6 +59,7 @@ class LabelSpec:
     background: str = "none"
     bars: bool = False  # hazard-stripe "under construction" bars top and bottom
     doodle: str = ""  # freehand ink drawn over everything: a base64 PNG mask, see doodle.py
+    layers: str = ""  # text, pictures, QR codes and stickers as placed objects, bottom to top: JSON, see layers.py. When set, the fields above that describe them (text ... invert, stickers) are ignored
     stickers: str = ""  # placed stickers, drawn under the doodle: JSON [[name, centre x, centre y, scale], ...], see stickers.py
 
     @classmethod
@@ -85,22 +86,31 @@ class LabelSpec:
         return cls(**values)
 
 
+# LabelSpec fields from before layers. The engine still reads them for a label that has no `layers` (a stored preset, an
+# old label file), and `render.migrate` (api.migrate) turns such a label into layers when a client loads it.
+LEGACY = frozenset({
+    "text", "qr", "image_path", "image_layout", "image_size", "threshold", "dither", "brightness", "contrast", "gamma",
+    "pixelate", "mirror", "flip", "invert", "font", "bold", "italic", "size", "align", "valign", "effect", "stickers",
+})
+
+
 def layout_hint(spec: LabelSpec) -> str:
     """The text and QR code are silently dropped by the default "Image only" layout: say so, and where to change it.
     Empty when there is nothing to say. Shared by every client, so they all word it the same."""
     if spec.image_path and spec.image_layout == "only" and (spec.text or spec.qr):
         what = "text and QR code aren't" if spec.text and spec.qr else ("text isn't" if spec.text else "QR code isn't")
-        return f"The {what} printed: the layout is \u201cImage only\u201d. Choose another layout on the Image tab."
+        return f"The {what} printed: the layout is \u201cImage only\u201d. Opening the label in Dotlab keeps them, as hidden layers you can show."
     return ""
 
 
-CONTENT_FIELDS = ("text", "qr", "image_path", "doodle", "stickers")  # what a label can say; a border or a pattern alone is not content
+CONTENT_FIELDS = ("text", "qr", "image_path", "doodle", "stickers", "layers")  # what a label can say; a border or a pattern alone is not content
 
 
 def has_content(spec: LabelSpec) -> bool:
     """Is there anything to print? Text, a QR code, a picture or a doodle; blank text does not count. Every client uses
     this (print, export and copy all refuse an empty label), so no one of them can forget a field again."""
-    return any(str(getattr(spec, field)).strip() for field in CONTENT_FIELDS)
+    from . import layers  # (layers imports this module)
+    return any(str(getattr(spec, field)).strip() for field in CONTENT_FIELDS if field != "layers") or layers.has_content(spec.layers)
 
 
 EXPORT_SCALES = (1, 4)  # the sizes a label can be exported at: as printed (one image dot per printed dot) or enlarged 4x

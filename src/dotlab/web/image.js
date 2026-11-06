@@ -1,6 +1,7 @@
 // The picture chooser (the schema's "image" field): shows which picture is chosen and lets the user browse, paste or
-// remove it. Turning a file into something the engine can use is the page's job: it passes `useFile(file)`.
-//   createImageWidget(useFile, say) -> { make(field, notify) -> control, current() }
+// remove it. Turning a file into something the engine can use is the page's job: it passes `useFile(file, replace)`
+// (`replace` is true when the file was chosen from a picture control, which means "this layer's picture").
+//   createImageWidget(useFile, say) -> { make(field, notify) -> control, current(), paste() }
 
 const ACCEPT = "image/png,image/jpeg,image/bmp,image/gif,image/webp,.png,.jpg,.jpeg,.bmp,.gif,.webp";
 
@@ -18,6 +19,18 @@ export function friendlyName(path) {
 
 export function createImageWidget(useFile, say) {
   let widget = null;
+
+  async function paste(replace = false) { // the Paste button and Edit > Paste image
+    try {
+      for (const item of await navigator.clipboard.read()) {
+        const type = item.types.find((t) => t.startsWith("image/"));
+        if (type) return useFile(new File([await item.getType(type)], "pasted picture", { type }), replace);
+      }
+      say("There is no picture on the clipboard.");
+    } catch (_) {
+      say("The browser didn't allow reading the clipboard: click on the page and press Ctrl+V instead.");
+    }
+  }
 
   function make(field, notify) {
     let path = "";
@@ -40,27 +53,16 @@ export function createImageWidget(useFile, say) {
     picker.addEventListener("change", () => {
       const [file] = picker.files;
       picker.value = ""; // choosing the same file again must still fire
-      if (file) useFile(file);
+      if (file) useFile(file, true);
     });
-    async function pasteFromClipboard() { // the Paste button and Edit > Paste image
-      try {
-        for (const item of await navigator.clipboard.read()) {
-          const type = item.types.find((t) => t.startsWith("image/"));
-          if (type) return useFile(new File([await item.getType(type)], "pasted picture", { type }));
-        }
-        say("There is no picture on the clipboard.");
-      } catch (_) {
-        say("The browser didn't allow reading the clipboard: click on the page and press Ctrl+V instead.");
-      }
-    }
-    pasteButton.addEventListener("click", pasteFromClipboard);
+    pasteButton.addEventListener("click", () => paste(true));
     clear.addEventListener("click", () => {
       set("");
       notify();
     });
 
-    widget = { root, get: () => path, set, paste: pasteFromClipboard, disable: (off) => { browse.disabled = pasteButton.disabled = clear.disabled = off; } };
+    widget = { root, get: () => path, set, paste: () => paste(true), disable: (off) => { browse.disabled = pasteButton.disabled = clear.disabled = off; } };
     return widget;
   }
-  return { make, current: () => widget };
+  return { make, current: () => widget, paste };
 }

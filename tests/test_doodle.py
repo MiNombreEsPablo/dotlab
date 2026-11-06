@@ -89,8 +89,7 @@ def test_describe_is_plain_json_and_complete():
     assert info["width"] == W and info["height"] == SH
     lo, hi, start = info["brush"]
     assert lo <= start <= hi
-    lo, hi, start = info["sticker_scale"]
-    assert lo <= start <= hi == stickers.MAX_SCALE
+    assert "sticker_scale" not in info and "max_stickers" not in info  # stickers are layers now
 
 
 def test_stickers_reach_clients_as_bitmaps_that_match_the_masks():

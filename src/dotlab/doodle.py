@@ -14,7 +14,6 @@ from functools import lru_cache
 
 from PIL import Image, UnidentifiedImageError
 
-from . import stickers
 from .spec import SH, W
 
 SIZE = (W, SH)
@@ -55,7 +54,7 @@ def canonical(data: str) -> str:
 
 # --- the drawing tools, as data: a client draws, the engine says what there is to draw with --------------------------
 
-TOOLS = ("pen", "square", "italic", "spray", "line", "box", "oval", "fbox", "foval", "fill", "stamp", "eraser")
+TOOLS = ("pen", "square", "italic", "spray", "line", "box", "oval", "fbox", "foval", "fill", "eraser")
 def _tile(on, size: int = 8) -> tuple:
     """A dither tile from a rule: `on(x, y)` says whether the dot at (x, y) of the size x size tile is ink."""
     return tuple("".join("#" if on(x, y) else "." for x in range(size)) for y in range(size))
@@ -88,12 +87,11 @@ INKS = {  # dither tiles, 4x4 or 8x8 ("#" is ink), anchored to the label so neig
 USES_INK = ("pen", "square", "italic", "line", "box", "oval", "fbox", "foval", "fill")  # tools that paint with the chosen pattern
 USES_BRUSH = ("pen", "square", "italic", "spray", "line", "box", "oval", "fbox", "foval", "eraser")  # tools that have a width
 BRUSH = (1, 24, 4)  # width in dots: smallest, largest, start
-STICKER_SCALE = (1, 9, 2)  # stickers are enlarged by whole numbers: smallest, largest, start
 UNDO_LIMIT = 30
 SPRAY_MS = 25  # how often the spray can sprays while the button is held
 LABELS = {
     "pen": "Round brush", "square": "Square brush", "italic": "Calligraphy", "spray": "Spray can", "line": "Line",
-    "box": "Rectangle", "oval": "Ellipse", "fbox": "Filled rectangle", "foval": "Filled ellipse", "fill": "Paint bucket", "stamp": "Sticker (move & resize)", "eraser": "Eraser",
+    "box": "Rectangle", "oval": "Ellipse", "fbox": "Filled rectangle", "foval": "Filled ellipse", "fill": "Paint bucket", "eraser": "Eraser",
     "solid": "Solid", "half": "50 % checker", "quarter": "25 % dots", "lines": "Lines", "diagonal": "Diagonal lines",
     "heavy": "75 % dark", "eighth": "12 % sprinkle", "upright": "Pinstripes", "crosshatch": "Crosshatch", "bricks": "Bricks",
     "waves": "Waves", "zigzag": "Zigzag", "diamonds": "Diamonds", "rings": "Rings", "plus": "Plus signs",
@@ -108,5 +106,5 @@ def describe() -> dict:
         "width": W, "height": SH,
         "tools": [[t, LABELS[t]] for t in TOOLS], "inks": [[i, LABELS[i], list(rows)] for i, rows in INKS.items()],
         "grid": GRID, "uses_ink": list(USES_INK), "uses_brush": list(USES_BRUSH),
-        "brush": list(BRUSH), "sticker_scale": list(STICKER_SCALE), "max_stickers": stickers.MAX_PLACED, "undo_limit": UNDO_LIMIT, "spray_ms": SPRAY_MS,
+        "brush": list(BRUSH), "undo_limit": UNDO_LIMIT, "spray_ms": SPRAY_MS,
     }

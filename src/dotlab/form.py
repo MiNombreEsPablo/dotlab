@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from . import fonts, spec
+from . import fonts, layers, spec, stickers
 
 LABELS = {  # how a choice is worded when `value.capitalize()` isn't enough
     "3d": "3D WordArt", "grid": "Graph paper", "dots": "Polka dots", "bevel": "Win95 bevel",
@@ -27,7 +27,7 @@ LABELS = {  # how a choice is worded when `value.capitalize()` isn't enough
 OUTPUT = "output"  # not a tab: shown next to the Print button, whatever tab is open
 
 # LabelSpec fields without a control in the schema yet. 
-PENDING = frozenset()  # (the doodle was the last one)
+PENDING = frozenset()  # LabelSpec fields still to be given a control
 
 
 @dataclass(frozen=True)
@@ -46,7 +46,7 @@ class Tab:
 @dataclass(frozen=True)
 class Field:
     name: str  # the LabelSpec field it sets
-    kind: str  # "text" | "textarea" | "choice" | "toggle" | "number" | "slider" | "image" | "doodle"
+    kind: str  # "text" | "textarea" | "choice" | "toggle" | "number" | "slider" | "image" | "doodle" | "layers" | "sticker"
     label: str
     tab: str  # a tab id, or OUTPUT
     row: str = ""  # fields with the same row title sit side by side under it (Bold and Italic: "Style")
@@ -85,37 +85,46 @@ def _font_choices() -> tuple:
     return tuple((family, family, category) for category, families in fonts.categories() for family in families)
 
 
-_SIDE_LAYOUTS = ("left", "right", "top", "bottom")  # the layouts in which the picture has a size
-_IMAGE_FIELDS = (
-    "image_layout", "image_size", "dither", "threshold", "brightness", "contrast", "gamma", "pixelate", "mirror",
-    "flip", "invert",
-)
+PAPER = "paper"  # not a tab: the Paper entry at the bottom of the layer list, edited in the same inspector as a layer
+
+LEGACY = spec.LEGACY  # LabelSpec fields from before layers: no client has a control for them; see spec.LEGACY and api.migrate
 
 TABS = (
-    Tab("content", "Content"),
-    Tab("text", "Text"),
-    Tab("image", "Image", needs="image_path", needs_hint="Choose an image first (Content tab).", reset=_IMAGE_FIELDS),
-    Tab("decoration", "Decoration"),
+    Tab("layers", "Layers"),
     Tab("doodle", "Doodle"),
 )
 
 FIELDS = (
-    Field("text", "textarea", "Text", "content"),
-    Field("qr", "text", "QR", "content", tip="Anything a phone can scan: a link, a Wi-Fi code, some words"),
-    Field("image_path", "image", "Image", "content",
-          tip="With the default layout the picture replaces the text and QR code;\nchoose another layout on the Image tab to combine them"),
+    Field("layers", "layers", "Layers", "layers"),  # the layer list and its inspector are the client's own widget
+    Field("border_style", "choice", "Border", PAPER, choices=_choices(spec.BORDER_STYLES), none_label="None", toggle="border"),
+    Field("background", "choice", "Background", PAPER, choices=_choices(spec.BACKGROUNDS)),
+    Field("bars", "toggle", "Under-construction bars", PAPER),
+    Field("doodle", "doodle", "Doodle", "doodle"),  # the drawing tools are the client's own; the schema places the tab
+    Field("copies", "number", "Copies", OUTPUT, minimum=1, maximum=99),
+    Field("density", "number", "Darkness", OUTPUT, minimum=0, maximum=15),
+)
+
+# What the inspector shows for the selected layer: `tab` is the layer type (or "box" for every layer but a sticker), `name`
+# a property of `layers.Layer`. Rules (show_when, enable_when, gate) work as in FIELDS, among the fields of one type.
+BOX = "box"
+LAYER_FIELDS = (
+    Field("x", "number", "Left", BOX, row="Position", minimum=-spec.W, maximum=spec.W),
+    Field("y", "number", "Top", BOX, row="Position", minimum=-spec.SH, maximum=spec.SH),
+    Field("w", "number", "Width", BOX, row="Size", minimum=layers.MIN_BOX, maximum=spec.W),
+    Field("h", "number", "Height", BOX, row="Size", minimum=layers.MIN_BOX, maximum=spec.SH),
+    Field("text", "textarea", "Text", "text"),
     Field("font", "choice", "Font", "text", choices=_font_choices()),
     Field("bold", "toggle", "Bold", "text", row="Style"),
     Field("italic", "toggle", "Italic", "text", row="Style"),
     Field("size", "number", "Size", "text", minimum=0, maximum=120, zero_label="Auto (fit)",
-          tip="Largest text size in dots; Auto picks the biggest that fits"),
+          tip="Largest text size in dots; Auto picks the biggest that fits the box"),
     Field("align", "choice", "Align", "text", choices=_choices(spec.ALIGNMENTS)),
     Field("valign", "choice", "Vertical", "text", choices=_choices(spec.VALIGNMENTS)),
     Field("effect", "choice", "Effect", "text", choices=_choices(spec.EFFECTS)),
-    Field("image_layout", "choice", "Layout", "image", row="Layout", choices=_choices(spec.IMAGE_LAYOUTS),
-          tip="How the picture shares the label with the text and QR code.\n'Image only' prints just the picture and ignores the text."),
-    Field("image_size", "number", "Picture size", "image", row="Layout", minimum=20, maximum=80, suffix="%",
-          enable_when=("image_layout", _SIDE_LAYOUTS), tip="The picture's share of the label"),
+    Field("path", "image", "Picture", "image",
+          tip="Drop, paste or browse for a picture; it is fitted inside the layer's box"),
+    Field("fit", "choice", "Fit", "image", choices=(("contain", "Whole picture", ""), ("cover", "Fill the box (crop)", "")),
+          tip="'Fill the box' crops the picture to the box; text above it gets a white halo to stay readable"),
     Field("dither", "choice", "Dither", "image", choices=_choices(spec.DITHERS + ("threshold",)), gate="threshold",
           tip="Floyd–Steinberg is smooth and best for photos; Atkinson is crisper, with the punchy\n"
               "look of the first Macs; ordered dithering gives the regular crosshatch of 90s handheld\n"
@@ -133,14 +142,9 @@ FIELDS = (
     Field("mirror", "toggle", "Mirror", "image", row="Options"),
     Field("flip", "toggle", "Flip", "image", row="Options"),
     Field("invert", "toggle", "Invert", "image", row="Options"),
-    Field("border_style", "choice", "Border", "decoration", choices=_choices(spec.BORDER_STYLES), none_label="None",
-          toggle="border"),
-    Field("background", "choice", "Background", "decoration", choices=_choices(spec.BACKGROUNDS)),
-    Field("bars", "toggle", "Under-construction bars", "decoration"),
-    Field("doodle", "doodle", "Doodle", "doodle"),  # the drawing tools are the client's own; the schema places the tab
-    Field("stickers", "stickers", "Stickers", "doodle"),  # placed with the doodle's Sticker tool; no row of its own
-    Field("copies", "number", "Copies", OUTPUT, minimum=1, maximum=99),
-    Field("density", "number", "Darkness", OUTPUT, minimum=0, maximum=15),
+    Field("data", "text", "QR", "qr", tip="Anything a phone can scan: a link, a Wi-Fi code, some words"),
+    Field("name", "sticker", "Sticker", "sticker"),  # the picker is the client's own (api.options()["sticker_groups"])
+    Field("scale", "slider", "Size", "sticker", minimum=1, maximum=stickers.MAX_SCALE, suffix="×"),
 )
 
 
@@ -150,4 +154,5 @@ def covered() -> set[str]:
 
 
 def describe() -> dict:
-    return {"tabs": [t.describe() for t in TABS], "fields": [f.describe() for f in FIELDS]}
+    return {"tabs": [t.describe() for t in TABS], "fields": [f.describe() for f in FIELDS],
+            "layer_fields": [f.describe() for f in LAYER_FIELDS]}

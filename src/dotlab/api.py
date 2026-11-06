@@ -13,7 +13,7 @@ import json
 from dataclasses import asdict, replace
 from pathlib import Path, PurePath
 
-from . import __version__, about, bluetooth, composition, doodle, fonts, form, imaging, presets, render, spec, stickers
+from . import __version__, about, bluetooth, composition, doodle, fonts, form, imaging, layers, presets, render, spec, stickers
 from .protocol import STATUS_QUERY, status_problems, tspl  # noqa: F401
 
 
@@ -61,9 +61,16 @@ def preset_entry(name: str, raw: str | bytes | dict) -> str:
     """What to keep for a preset: {"name": the cleaned name, "spec": the label}, as JSON text. A preset is a style: the
     picture is not kept (a picture lives in a saved label file), and the doodle is stored compactly. ValueError with a
     sentence for a bad name."""
-    label = replace(label_from_json(raw), image_path="", doodle=doodle.canonical(label_from_json(raw).doodle),
-                    stickers=stickers.canonical(label_from_json(raw).stickers))
+    given = label_from_json(raw)
+    label = replace(given, image_path="", doodle=doodle.canonical(given.doodle), stickers=stickers.canonical(given.stickers),
+                    layers=layers.with_paths(given.layers, {i: "" for i in layers.image_paths(given.layers)}))
     return json.dumps({"name": presets.clean_name(name), "spec": asdict(label)})
+
+
+def migrate(raw: str | bytes | dict) -> str:
+    """A label from before layers (text, QR, picture and stickers as separate fields, in a stored preset or an old label
+    file) as the same label made of layers, as JSON text. A label that already has layers comes back unchanged."""
+    return json.dumps(asdict(render.migrate(label_from_json(raw))))
 
 
 def composition_dumps(raw: str | bytes | dict) -> bytes:
@@ -75,7 +82,7 @@ def composition_dumps(raw: str | bytes | dict) -> bytes:
 def composition_loads(path: str) -> str:
     """The label in the label file a client wrote to `path`, as JSON text for a client to show; an embedded picture is
     stored where the engine can read it. Raises ValueError with a sentence for the user when it is not a label file."""
-    return json.dumps(asdict(composition.loads(Path(path).read_bytes())))
+    return json.dumps(asdict(render.migrate(composition.loads(Path(path).read_bytes()))))  # an older file opens as layers
 
 
 def adopt_image(path: str, name: str = "") -> str:
@@ -100,8 +107,11 @@ def fonts_needed(raw: str | bytes | dict) -> list[str]:
     """Names of the font files (in the bundled `fonts/` folder) that rendering this label can open, so a client that
     loads fonts on demand knows what to fetch first: the chosen font, the Japanese fallback, the last resort and any font a background draws with."""
     label = label_from_json(raw)
-    wanted = [render.font_path(label.font, label.bold, label.italic)[0], fonts.FALLBACK_JA.pick(label.bold, False)[0],
-              *render.FALLBACK_FONT_PATHS]
+    families = [(label.font, label.bold, label.italic)] if not label.layers else []
+    families += [(l.font, l.bold, l.italic) for l in layers.parse(label.layers) if l.t == "text"]
+    wanted = [render.font_path(*family)[0] for family in families]
+    wanted += [fonts.FALLBACK_JA.pick(bold, False)[0] for bold in dict.fromkeys(bold for _, bold, _ in families)]
+    wanted += render.FALLBACK_FONT_PATHS
     if label.background in render.BACKGROUND_FONTS:  # a pattern made of text, such as the matrix rain
         wanted.append(render.font_path(render.BACKGROUND_FONTS[label.background], False)[0])
     names: list[str] = []
@@ -115,7 +125,8 @@ def options() -> str:
     """JSON describing what a label can be: the allowed choices, the geometry and the bundled fonts. A client builds
     its controls from this instead of repeating the lists."""
     return json.dumps({
-        "geometry": {"width": spec.W, "height": spec.H, "sticker_height": spec.SH, "margin": spec.MARGIN},
+        "geometry": {"width": spec.W, "height": spec.H, "sticker_height": spec.SH, "margin": spec.MARGIN,
+                     "bar_height": render.BAR_H, "border_insets": render.BORDER_INSET},
         "effects": spec.EFFECTS,
         "backgrounds": spec.BACKGROUNDS,
         "border_styles": spec.BORDER_STYLES,
@@ -137,6 +148,8 @@ def options() -> str:
         "sticker_groups": [{"label": title, "stickers": list(keys)} for title, keys in stickers.GROUPS],
         "doodle": doodle.describe(),
         "defaults": asdict(spec.LabelSpec()),
+        "layers": {"types": layers.TYPES, "max": layers.MAX_LAYERS, "max_scale": stickers.MAX_SCALE, "min_box": layers.MIN_BOX,
+                   "defaults": {t: asdict(layers.Layer(t)) for t in layers.TYPES}},
         "export": {"scales": [[s, spec.export_size_name(s)] for s in spec.EXPORT_SCALES], "extension": ".png"},
         "app": {"name": "Dotlab", "version": __version__, "repo_url": about.REPO_URL,
                 "issues_url": about.ISSUES_URL, "fonts": len(fonts.BUNDLED)},

@@ -9,6 +9,7 @@
 import { buildForm } from "./form.js";
 import { createImageWidget } from "./image.js";
 import { createDoodleWidget } from "./doodle.js";
+import { createLayersWidget, hasContent as layersHaveContent, withoutPictures } from "./layers.js";
 import { createMenubar } from "./menus.js";
 import { previewFonts } from "./fontpreview.js";
 import { applyTheme, DEFAULT_THEME, previewColors, THEMES } from "./themes.js";
@@ -55,7 +56,8 @@ async function main() {
     clearTimeout(saveTimer);
     saveTimer = null; // nothing pending any more
     const current = spec();
-    store.set("label", { spec: { ...current, image_path: "" }, hadPicture: !!current.image_path });
+    const { text, had } = withoutPictures(current.layers);
+    store.set("label", { spec: { ...current, layers: text }, hadPicture: had });
   };
   const remember = () => {
     clearTimeout(saveTimer);
@@ -74,7 +76,7 @@ async function main() {
         again = false;
         // while drawing, the engine renders the label without its doodle: the overlay shows the ink, and the bucket
         // needs the label alone to know where the text is
-        const { pixels, hints } = await engine.preview(activeTab === "doodle" ? { ...spec(), doodle: "", stickers: "" } : spec());
+        const { pixels, hints } = await engine.preview(activeTab === "doodle" ? { ...spec(), doodle: "" } : spec());
         draw(pixels);
         remember();
         if (activeTab === "doodle") doodle.setUnderlay(pixels);
@@ -91,14 +93,13 @@ async function main() {
   }
 
   // a picture the user chose, dropped or pasted: the engine takes it in and hands back the path the label uses
-  async function useFile(file) {
+  async function useFile(file, replace = false) {
     if (!file) return;
     status(`Reading ${file.name}…`);
     const started = performance.now();
     try {
       const path = await engine.addImage(new Uint8Array(await file.arrayBuffer()), file.name);
-      picture.current().set(path, file.name);
-      form.refreshState();
+      if (!layersUi.usePicture(path, file.name, replace)) return; // (the label is full: the widget said so)
       status("");
       await refresh();
       const seconds = (performance.now() - started) / 1000;
@@ -108,23 +109,26 @@ async function main() {
     }
   }
   const picture = createImageWidget(useFile, (text) => status(text, true));
+  const layersUi = createLayersWidget(options, { image: picture.make, fonts: (select) => previewFonts(select, options.fonts), say: status, paper: () => form.read() });
   const doodle = createDoodleWidget(options);
-  document.querySelector(".paper").append(doodle.overlay);
+  document.querySelector(".paper").append(layersUi.overlay, doodle.overlay);
   let activeTab = "";
   const form = buildForm(options.form, options.defaults, (field) => {
     if (field.tab === "output") return; // copies and darkness don't change the picture
-    if ((field.name === "doodle" || field.name === "stickers") && activeTab === "doodle") { // the overlay already shows what was drawn
+    if (field.name === "border_style" || field.name === "bars") layersUi.paperChanged();
+    if (field.name === "doodle" && activeTab === "doodle") { // the overlay already shows what was drawn
       remember();
       return;
     }
     refresh();
-  }, { image: picture.make, doodle: doodle.make, stickers: doodle.makeStickers }, (id) => {
+  }, { layers: layersUi.make, doodle: doodle.make }, (id) => {
     const wasDrawing = activeTab === "doodle";
     activeTab = id;
     doodle.setActive(id === "doodle");
+    layersUi.setActive(id === "layers");
     if (wasDrawing || id === "doodle") refresh(); // the doodle moves between the engine's picture and the overlay
   });
-  previewFonts(form.tabs.querySelector("#f-font"), options.fonts);
+  layersUi.setPaper(form.paper);
 
   const pictureIn = (transfer) => Array.from((transfer && transfer.files) || []).find((f) => f.type.startsWith("image/"));
   addEventListener("dragover", (event) => {
@@ -152,6 +156,10 @@ async function main() {
     }
   });
   const spec = () => form.read();
+  function writeForm(label) { // every way a whole label arrives (preset, file, last visit, new): the layers learn where the frame is
+    form.write(label);
+    layersUi.syncPaper();
+  }
   $("form").append(form.tabs);
 
   // the printer row belongs to the Output box but differs per client, so it isn't in the form description
@@ -187,7 +195,8 @@ async function main() {
     retint();
   }
 
-  const hasContent = (label) => options.content_fields.some((name) => String(label[name]).trim()); // as spec.has_content
+  const hasContent = (label) => // as spec.has_content
+    options.content_fields.some((name) => name !== "layers" && String(label[name] ?? "").trim()) || layersHaveContent(label.layers);
 
   // saving and copying the label as an image: the engine renders the PNG, the files seam delivers it
   for (const [scale, name] of options.export.scales) $("export-size").append(new Option(name, scale));
@@ -245,7 +254,11 @@ async function main() {
       status(`There is no preset called “${name}”.`, true);
       return reloadPresets();
     }
-    form.write(loaded);
+    try {
+      writeForm(await engine.migrate(loaded)); // (a preset kept before layers has none)
+    } catch (e) {
+      return status(`Couldn't open the preset “${name}”: ${e.message}`, true);
+    }
     status("");
     await refresh();
   });
@@ -266,7 +279,7 @@ async function main() {
       const saved = await presets.save($("preset-name").value, spec());
       closeNameForm();
       await reloadPresets(saved);
-      status(`Saved preset “${saved}”.${spec().image_path ? " (A preset keeps the style, not the picture: Save… keeps both.)" : ""}`);
+      status(`Saved preset “${saved}”.${withoutPictures(spec().layers).had ? " (A preset keeps the style, not the picture: Save… keeps both.)" : ""}`);
     } catch (e) {
       status(`Couldn't save the preset: ${e.message}`, true);
     }
@@ -291,7 +304,7 @@ async function main() {
   // the whole label design as a label file (a PNG with the design inside; the picture travels inside it), and back
   async function openLabelFile(file) {
     try {
-      form.write(await engine.compositionLoads(new Uint8Array(await file.arrayBuffer())));
+      writeForm(await engine.compositionLoads(new Uint8Array(await file.arrayBuffer())));
       status(`Opened ${file.name}.`);
       await refresh();
     } catch (e) {
@@ -303,7 +316,7 @@ async function main() {
     if (file.type === "image/png" || file.name.toLowerCase().endsWith(".png")) {
       try {
         const label = await engine.compositionLoads(new Uint8Array(await file.arrayBuffer()));
-        form.write(label);
+        writeForm(label);
         status(`Opened ${file.name}.`);
         return refresh();
       } catch (_) { /* only a picture */ }
@@ -343,7 +356,7 @@ async function main() {
 
   async function newLabel() {
     if (hasContent(spec()) && !confirm("Start a new label? The current one is replaced: use Save first to keep it.")) return;
-    form.write({}); // every control back to its default, the picture and the doodle included
+    writeForm({}); // every control back to its default: one empty text layer, no doodle
     $("preset").value = "";
     resetDelete();
     await refresh();
@@ -351,11 +364,6 @@ async function main() {
   }
 
   // the menu bar: every item calls an action the buttons already use
-  async function clearImage() {
-    picture.current().set("");
-    form.refreshState();
-    await refresh();
-  }
   function showAbout() {
     const app = options.app;
     $("about-title").textContent = `${app.name} ${app.version}`;
@@ -383,9 +391,8 @@ async function main() {
       { label: "Print", shortcut: "Ctrl+P", run: print, enabled: () => !$("print").disabled },
     ] },
     { label: "Edit", items: [
-      { label: "Paste image", shortcut: "Ctrl+V", display: true, run: () => picture.current().paste() },
-      { label: "Clear image", run: clearImage, enabled: () => !!spec().image_path },
-      { label: "Clear doodle", run: () => doodle.current().clear(), enabled: () => !!(spec().doodle || spec().stickers) },
+      { label: "Paste image", shortcut: "Ctrl+V", display: true, run: () => picture.paste() },
+      { label: "Clear doodle", run: () => doodle.current().clear(), enabled: () => !!spec().doodle },
       "-",
       { label: "Copy label as image", shortcut: "Ctrl+Shift+C", run: copyImage },
     ] },
@@ -400,13 +407,17 @@ async function main() {
   ]);
   status("");
   const kept = await store.get("label", null);
+  let restoreNote = "";
   if (kept && kept.spec) {
     try {
-      form.write(kept.spec);
+      writeForm(await engine.migrate(kept.spec));
       if (kept.hadPicture) status("Restored your last label. Its picture isn't kept: add it again, or use Save, which keeps pictures.");
-    } catch (_) { /* a label from an older version that doesn't fit: start fresh */ }
+    } catch (e) { // a label that can't be opened: start fresh, and say why
+      restoreNote = `Couldn't restore your last label (${e.message}); starting a new one.`;
+    }
   }
   await refresh();
+  if (restoreNote) status(restoreNote, true);
   // For tests: the label as the page sees it, and whether it is idle.
   window.__dotlab = { client: "web", engine, spec, form, refresh, idle: () => !rendering, pixels: () => last };
 }

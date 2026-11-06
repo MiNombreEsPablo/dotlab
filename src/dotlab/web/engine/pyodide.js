@@ -36,6 +36,8 @@ export function createEngine(baseUrl) {
     preview: (spec) => call("preview", { spec: JSON.stringify(spec) }),
     // bytes of a picture the user chose -> the path to put in the label (rejects with a sentence if it isn't usable)
     addImage: (bytes, name) => call("addImage", { data: bytes, name }, [bytes.buffer]),
+    // a label from before layers (an old preset, a remembered label) as the same label made of layers
+    migrate: async (spec) => JSON.parse(await call("migrate", { spec: JSON.stringify(spec) })),
     // a preset to keep: {name, spec}
     presetEntry: async (name, spec) => JSON.parse(await call("presetEntry", { name, spec: JSON.stringify(spec) })),
     // the label as a label file, a PNG with the design inside ({data: Uint8Array, name}), and back from its bytes (-> the label as an object)
