@@ -48,11 +48,14 @@ seconds (fonts load as you use them), and nothing you make leaves your device. A
 - **Backgrounds:** checker, dots, stripes, dithered gradient, stars, graph paper, scanlines, circuit board, hex grid,
   synthwave sun, matrix rain, halftone, bricks, waves, zigzag, diamonds, rings, crosshatch, TV static. **Borders:** solid, double, dotted, checker, Win95 bevel, marquee lights,
   cyber panel, HUD brackets, ruler ticks. **Bars:** under-construction hazard stripes.
-- **QR codes, images** (drag and drop or paste), copies, darkness, saved **presets**. **Image and text together:** put the
-  picture left, right, above, below or behind the text (and QR code), with a size control. Floyd–Steinberg, Atkinson
+- **Layers:** text, pictures, QR codes and stickers are all layers, as many as you like (up to 40). Click one on the label to
+  select it, drag to move, drag the corner to resize, arrow keys nudge and Delete removes it; the same inspector edits any
+  of them (position, size, order, show/hide, duplicate) plus what is specific to its kind. The **Paper** entry at the
+  bottom of the list holds the background, border and bars. Pictures can be dragged in or pasted, copies, darkness, saved
+  **presets**. A picture layer can fill its box (text over it gets a white halo). Floyd–Steinberg, Atkinson
   (the crisp first-Mac look), ordered (Bayer) crosshatch or hard-cutoff dithering; brightness, contrast, gamma, pixelate, mirror, flip and invert.
   Transparent PNGs print on white and phone photos keep their orientation.
-- **Doodle:** freehand ink on the label with brushes, spray, outlined or filled shapes, a paint bucket, 18 dither patterns to paint with (bricks, waves, plus signs, TV static…), Shift for straight lines, squares and circles, a snap-to-grid graph paper mode, and 79 pixel stickers in seven themed groups that you can move, resize and delete after placing them (select one and press Delete), with undo and redo (Ctrl+Z, Ctrl+Shift+Z or Ctrl+Y).
+- **Doodle:** freehand ink on the label with brushes, spray, outlined or filled shapes, a paint bucket, 18 dither patterns to paint with (bricks, waves, plus signs, TV static…), Shift for straight lines, squares and circles, a snap-to-grid graph paper mode, with undo and redo (Ctrl+Z, Ctrl+Shift+Z or Ctrl+Y).
 - **Remembers your work:** the label you were designing is back when you reopen the page (its picture isn't kept: *Save* keeps pictures). *File → New label* starts over.
 - **Save and share:** *Save* writes the label as a normal 1-bit **PNG** with the whole design stored inside it. Any
   image viewer or editor opens it as a picture; Dotlab opens it again for editing (*Open label*, or drop it on the
@@ -86,7 +89,7 @@ work to build and to keep working).
 **Next**
 - [ ] `research` Check Print from Chrome/Edge on real Windows and macOS machines, and fix what turns up. Testers wanted.
 - [ ] `useful` Open Recent (the page already remembers the label you were on, minus its picture)
-- [x] `fun` More stickers (79, in themed groups), and a sticker that can be moved or resized after it is placed
+- [x] `fun` More stickers (79, in themed groups), and every element a movable, resizable layer
 - [ ] `fun` Poster mode: split one large image across several stickers, with alignment marks
 
 **Later**

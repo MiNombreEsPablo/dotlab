@@ -151,3 +151,9 @@ def image_paths(text: str) -> dict[int, str]:
 def with_paths(text: str, paths: dict[int, str]) -> str:
     """The layers with the picture path of layer i replaced by paths[i] (for the layers named in `paths`)."""
     return encode([_replace(layer, path=paths[i]) if i in paths else layer for i, layer in enumerate(parse(text))])
+
+
+def has_content(text: str) -> bool:
+    """Is any visible layer saying something: text that isn't blank, a QR code, a picture or a sticker?"""
+    return any(not layer.hidden and (layer.text.strip() or layer.data.strip() or layer.path or layer.name)
+               for layer in parse(text))

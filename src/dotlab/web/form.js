@@ -3,7 +3,7 @@
 // the picture chooser is drawn by a widget the page passes in.
 //   buildForm(schema, defaults, onChange, widgets) -> { tabs, output, read(), write(spec) }
 // onChange(field) is called after the user changes a control; onTab(id) when a tab is opened (also for the first one).
-// widgets.image / widgets.doodle / widgets.stickers(field, notify) -> a control (below), drawn by the page.
+// widgets.image / doodle / layers / sticker (field, notify) -> a control (below), drawn by the page.
 //
 // Every control is { root: Element, get(), set(value), disable(bool) } with its value in the label's own units.
 
@@ -78,10 +78,11 @@ export function makeSlider(field, startValue, notify) {
   return { root, get: () => value, set, disable: (off) => { range.disabled = box.disabled = off; } };
 }
 
-function makeControl(field, startValue, notify, widgets) {
+export function makeControl(field, startValue, notify, widgets) {
   if (field.kind === "image") return widgets.image(field, notify);
   if (field.kind === "doodle") return widgets.doodle(field, notify);
-  if (field.kind === "stickers") return widgets.stickers(field, notify);
+  if (field.kind === "layers") return widgets.layers(field, notify);
+  if (field.kind === "sticker") return widgets.sticker(field, notify);
   if (field.kind === "slider") return makeSlider(field, startValue, notify);
   const id = `f-${field.name}`;
   let input;
@@ -133,7 +134,7 @@ function makeControl(field, startValue, notify, widgets) {
 }
 
 // What a choice or a toggle contributes to the label: a "None" item turns a bool off; a gate sends a slider instead.
-function valueOf(field, control, controls, defaults) {
+export function valueOf(field, control, controls, defaults) {
   const v = control.get();
   if (field.kind === "choice" && field.toggle) return v === "" ? { [field.toggle]: false } : { [field.toggle]: true, [field.name]: v };
   if (field.kind === "choice" && field.gate) {
@@ -142,7 +143,7 @@ function valueOf(field, control, controls, defaults) {
   return { [field.name]: v };
 }
 
-function startValueOf(field, defaults) {
+export function startValueOf(field, defaults) {
   if (field.kind === "choice" && field.toggle) return defaults[field.toggle] ? defaults[field.name] : "";
   if (field.kind === "choice" && field.gate) return defaults[field.gate] != null ? field.gate : defaults[field.name];
   if (field.kind === "slider") return defaults[field.name] ?? field.default;
@@ -150,7 +151,7 @@ function startValueOf(field, defaults) {
 }
 
 // Rows: consecutive fields with the same row title share one line under it.
-function layoutFields(fields, controls) {
+export function layoutFields(fields, controls) {
   const nodes = new Map(); // field name -> the row element it is in
   const rows = [];
   for (let i = 0; i < fields.length; i++) {
@@ -159,8 +160,8 @@ function layoutFields(fields, controls) {
     const first = group[0];
     const allToggles = group.every((f) => f.kind === "toggle");
     let row;
-    if (first.kind === "doodle" || first.kind === "stickers") {
-      row = controls.get(first.name).root; // the doodle's own panel, with its own rows (the stickers have none: hidden)
+    if (first.kind === "doodle" || first.kind === "layers" || first.kind === "sticker") {
+      row = controls.get(first.name).root; // the widget's own panel, with its own rows
     } else if (allToggles) {
       const checks = group.map((f) => el("label", { className: "check" }, controls.get(f.name).root, f.label));
       row = el("div", { className: first.row ? "field toggles" : "field toggles bare" },
@@ -278,9 +279,10 @@ export function buildForm(schema, defaults, onChange, widgets = {}, onTab = () =
   }
   select(0, false);
 
+  const paper = layoutFields(fields.filter((f) => f.tab === "paper"), controls); // shown by the layer list, as its Paper entry
   const outputLayout = layoutFields(fields.filter((f) => f.tab === "output"), controls);
   const output = el("fieldset", { className: "output" }, el("legend", {}, "Output"), ...outputLayout.rows);
   refreshState();
 
-  return { tabs: el("div", { className: "tabs" }, tablist, ...panels), output, read, write, refreshState };
+  return { tabs: el("div", { className: "tabs" }, tablist, ...panels), output, paper: paper.rows, read, write, refreshState };
 }

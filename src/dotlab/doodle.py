@@ -55,7 +55,7 @@ def canonical(data: str) -> str:
 
 # --- the drawing tools, as data: a client draws, the engine says what there is to draw with --------------------------
 
-TOOLS = ("pen", "square", "italic", "spray", "line", "box", "oval", "fbox", "foval", "fill", "stamp", "eraser")
+TOOLS = ("pen", "square", "italic", "spray", "line", "box", "oval", "fbox", "foval", "fill", "eraser")
 def _tile(on, size: int = 8) -> tuple:
     """A dither tile from a rule: `on(x, y)` says whether the dot at (x, y) of the size x size tile is ink."""
     return tuple("".join("#" if on(x, y) else "." for x in range(size)) for y in range(size))
@@ -93,7 +93,7 @@ UNDO_LIMIT = 30
 SPRAY_MS = 25  # how often the spray can sprays while the button is held
 LABELS = {
     "pen": "Round brush", "square": "Square brush", "italic": "Calligraphy", "spray": "Spray can", "line": "Line",
-    "box": "Rectangle", "oval": "Ellipse", "fbox": "Filled rectangle", "foval": "Filled ellipse", "fill": "Paint bucket", "stamp": "Sticker (move & resize)", "eraser": "Eraser",
+    "box": "Rectangle", "oval": "Ellipse", "fbox": "Filled rectangle", "foval": "Filled ellipse", "fill": "Paint bucket", "eraser": "Eraser",
     "solid": "Solid", "half": "50 % checker", "quarter": "25 % dots", "lines": "Lines", "diagonal": "Diagonal lines",
     "heavy": "75 % dark", "eighth": "12 % sprinkle", "upright": "Pinstripes", "crosshatch": "Crosshatch", "bricks": "Bricks",
     "waves": "Waves", "zigzag": "Zigzag", "diamonds": "Diamonds", "rings": "Rings", "plus": "Plus signs",

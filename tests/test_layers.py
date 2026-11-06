@@ -110,3 +110,10 @@ def test_every_text_layers_font_is_fetched():
     text = layers.encode([layers.Layer("text", text="a", font="Orbitron"), layers.Layer("text", text="b", font="Bangers")])
     names = api.fonts_needed({"layers": text})
     assert any("Orbitron" in n for n in names) and any("Bangers" in n for n in names)
+
+
+def test_empty_hidden_layers_are_not_content_but_anything_visible_and_said_is():
+    from dotlab import spec as s
+    assert not s.has_content(core.LabelSpec(layers=layers.encode([layers.Layer("text"), layers.Layer("qr", data="  ")])))
+    assert not s.has_content(core.LabelSpec(layers=layers.encode([layers.Layer("text", text="x", hidden=True)])))
+    assert s.has_content(core.LabelSpec(layers=layers.encode([layers.Layer("text"), layers.Layer("qr", data="x")])))

@@ -109,7 +109,8 @@ CONTENT_FIELDS = ("text", "qr", "image_path", "doodle", "stickers", "layers")  #
 def has_content(spec: LabelSpec) -> bool:
     """Is there anything to print? Text, a QR code, a picture or a doodle; blank text does not count. Every client uses
     this (print, export and copy all refuse an empty label), so no one of them can forget a field again."""
-    return any(str(getattr(spec, field)).strip() for field in CONTENT_FIELDS)
+    from . import layers  # (layers imports this module)
+    return any(str(getattr(spec, field)).strip() for field in CONTENT_FIELDS if field != "layers") or layers.has_content(spec.layers)
 
 
 EXPORT_SCALES = (1, 4)  # the sizes a label can be exported at: as printed (one image dot per printed dot) or enlarged 4x

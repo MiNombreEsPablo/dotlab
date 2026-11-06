@@ -338,6 +338,31 @@ body.dropping .bezel { outline: 3px dashed var(--focus); outline-offset: 4px; }
 .reset-row.buttons { justify-content: flex-start; gap: 8px; }
 .doodle-hint { margin: 8px 0 0; }
 
+/* layers: the list, the inspector, and the selection box over the preview */
+.layer-add { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.layer-list { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 4px; }
+.layer { display: flex; align-items: center; gap: 6px; }
+.paper-entry { margin-top: 4px; padding-top: 6px; border-top: 2px dotted var(--raised); }
+.layer-row {
+  flex: 1 1 auto; min-width: 0; display: flex; gap: 8px; align-items: baseline; padding: 4px 8px;
+  color: var(--btn-text); font: inherit; text-align: left; background: var(--btn);
+  border: 2px solid; border-color: var(--raised); border-radius: var(--r-ctl); cursor: pointer;
+}
+.layer-row:hover { border-color: var(--hover-border, var(--raised)); }
+.layer-row[aria-pressed="true"] { border-color: var(--focus); background: var(--btn-down); }
+.layer-row:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.layer-kind { flex: none; font-weight: bold; }
+.layer-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: 0.85; }
+.inspector { padding-top: 8px; border-top: 2px solid var(--raised); }
+.inspector-title { margin: 0 0 8px; font-size: 1em; }
+.paper .layers-overlay { position: absolute; inset: 0; touch-action: none; outline: none; }
+.paper .layers-overlay:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.sel-box { position: absolute; box-sizing: border-box; border: 2px dashed var(--focus); pointer-events: none; }
+.sel-handle {
+  position: absolute; right: -7px; bottom: -7px; width: 12px; height: 12px; box-sizing: border-box;
+  background: var(--focus); border: 2px solid var(--screen); cursor: nwse-resize; pointer-events: auto;
+}
+
 /* the preset bar above the tabs */
 .presets { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
 .presets > label { color: var(--text); }
