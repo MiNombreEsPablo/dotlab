@@ -84,7 +84,8 @@ def test_describe_is_plain_json_and_complete():
     assert [t for t, _ in info["tools"]] == list(doodle.TOOLS)
     assert [i for i, _, _ in info["inks"]] == list(doodle.INKS)
     assert set(info["uses_ink"]) <= set(doodle.TOOLS) and set(info["uses_brush"]) <= set(doodle.TOOLS)
-    assert all(len(rows) == 4 and all(len(r) == 4 for r in rows) for _, _, rows in info["inks"])
+    assert all(len(rows) in (4, 8) and all(len(r) == len(rows) for r in rows) for _, _, rows in info["inks"])
+    assert all(set("".join(rows)) <= set("#.") and "#" in "".join(rows) for _, _, rows in info["inks"])
     assert info["width"] == W and info["height"] == SH
     lo, hi, start = info["brush"]
     assert lo <= start <= hi

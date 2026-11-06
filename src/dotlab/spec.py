@@ -20,9 +20,10 @@ EFFECTS = ("none", "shadow", "outline", "3d", "glitch", "neon", "scanlines")
 BACKGROUNDS = (
     "none", "checker", "dots", "stripes", "gradient", "stars", "grid",
     "scanlines", "circuit", "hexgrid", "synthwave", "matrix", "halftone",
+    "bricks", "waves", "zigzag", "diamonds", "rings", "crosshatch", "static",
 )
 IMAGE_LAYOUTS = ("only", "left", "right", "top", "bottom", "behind")  # image + text arrangement
-DITHERS = ("floyd", "bayer4", "bayer8")  # images; a hard cutoff is `threshold`
+DITHERS = ("floyd", "atkinson", "bayer4", "bayer8")  # images; a hard cutoff is `threshold`
 BORDER_STYLES = ("solid", "double", "dotted", "checker", "bevel", "marquee", "chamfer", "brackets", "ticks")
 
 

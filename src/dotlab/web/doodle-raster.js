@@ -6,6 +6,7 @@
 //   const d = new Doodle({ width, height, inks, undoLimit });   d.tool = "pen"; d.brush = 4; d.ink = "half";
 //   d.down(x, y); d.move(x, y); d.up(x, y);   d.pixels   d.toRgba(out)
 
+const SHAPES = ["line", "box", "oval", "fbox", "foval"]; // the tools that are dragged out and drawn on release
 const circle = new Map(); // diameter -> [[dx, dy], ...] covering a round brush
 
 function discOffsets(d) {
@@ -69,6 +70,9 @@ export class Doodle {
     this.tool = "pen";
     this.brush = 4;
     this.ink = "solid";
+    this.constrain = false; // Shift held: lines snap to 45 degrees, rectangles and ellipses become squares and circles
+    this.grid = 8; // spacing of the snap grid, in dots
+    this.showGrid = false;
     // Stickers are objects, not ink: placed ones can be selected, moved, resized and removed. `designs` maps a name to its
     // 24 rows of "0"/"1"; a placed sticker is {name, x, y, scale} with (x, y) its centre, drawn under the ink.
     this.designs = designs;
@@ -211,7 +215,8 @@ export class Doodle {
 
   _pattern() { // does the chosen ink put a dot here? Tiles are anchored to the label, so strokes line up.
     const rows = this.tool === "eraser" || !this.inks[this.ink] ? this.inks.solid : this.inks[this.ink];
-    return (x, y) => rows[y & 3][x & 3] === "#";
+    const n = rows.length; // 4 or 8: a square tile
+    return (x, y) => rows[y % n][x % n] === "#";
   }
 
   _dot(target, x, y, value, allowed) {
@@ -262,7 +267,22 @@ export class Doodle {
     }
   }
 
-  _shape(target, a, b) { // line, rectangle or ellipse, drawn with the brush
+  _constrained(a, b) { // the far corner of a shape, pulled to a 45-degree line or a square while Shift is held
+    if (!this.constrain) return b;
+    const dx = b[0] - a[0];
+    const dy = b[1] - a[1];
+    const ax = Math.abs(dx);
+    const ay = Math.abs(dy);
+    if (this.tool === "line") {
+      if (ay * 2 < ax) return [b[0], a[1]]; // closer to horizontal
+      if (ax * 2 < ay) return [a[0], b[1]]; // closer to vertical
+    }
+    const side = Math.max(ax, ay);
+    return [a[0] + Math.sign(dx || 1) * side, a[1] + Math.sign(dy || 1) * side];
+  }
+
+  _shape(target, a, end) { // line, rectangle or ellipse (outlined with the brush, or filled with the ink), drawn with the brush
+    const b = this._constrained(a, end);
     const allowed = this._pattern();
     const brush = (x, y) => this._disc(target, x, y, this.brush, 1, allowed);
     if (this.tool === "line") {
@@ -271,6 +291,34 @@ export class Doodle {
     }
     const [x0, x1] = [Math.min(a[0], b[0]), Math.max(a[0], b[0])];
     const [y0, y1] = [Math.min(a[1], b[1]), Math.max(a[1], b[1])];
+    const filled = this.tool === "fbox" || this.tool === "foval";
+    if (filled) { // the inside takes the ink's pattern, the outline is solid, as in Decker's "filled" shapes
+      const oval = this.tool === "foval";
+      const cx = (x0 + x1) / 2;
+      const cy = (y0 + y1) / 2;
+      const rx = (x1 - x0) / 2 + 0.5;
+      const ry = (y1 - y0) / 2 + 0.5;
+      for (let y = y0; y <= y1; y++) {
+        for (let x = x0; x <= x1; x++) {
+          if (oval && ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 > 1) continue;
+          this._dot(target, x, y, 1, allowed);
+        }
+      }
+      const solid = () => true;
+      const outline = (x, y) => this._disc(target, x, y, this.brush, 1, solid);
+      if (!oval) {
+        for (const [p, q] of [[[x0, y0], [x1, y0]], [[x1, y0], [x1, y1]], [[x1, y1], [x0, y1]], [[x0, y1], [x0, y0]]]) {
+          for (const [x, y] of linePoints(p[0], p[1], q[0], q[1])) outline(x, y);
+        }
+        return;
+      }
+      const steps = Math.max(16, Math.ceil(2 * Math.PI * Math.max(rx, ry)) * 2);
+      for (let k = 0; k < steps; k++) {
+        const t = (k / steps) * 2 * Math.PI;
+        outline(Math.round(cx + (rx - 0.5) * Math.cos(t)), Math.round(cy + (ry - 0.5) * Math.sin(t)));
+      }
+      return;
+    }
     if (this.tool === "box") {
       for (const [p, q] of [[[x0, y0], [x1, y0]], [[x1, y0], [x1, y1]], [[x1, y1], [x0, y1]], [[x0, y1], [x0, y0]]]) {
         for (const [x, y] of linePoints(p[0], p[1], q[0], q[1])) brush(x, y);
@@ -388,13 +436,17 @@ export class Doodle {
       this._start = this._last = this._now = null;
       return changed;
     }
-    if (["line", "box", "oval"].includes(this.tool)) {
+    if (SHAPES.includes(this.tool)) {
       this._shape(this.pixels, this._start, end);
     }
     this._start = this._last = this._now = null;
     return true;
   }
 
+  snap(x, y) { // a point pulled to the nearest grid crossing (when the snap grid is on, see showGrid)
+    const g = this.grid;
+    return [Math.min(this.width - 1, Math.round(x / g) * g), Math.min(this.height - 1, Math.round(y / g) * g)];
+  }
   leave() { this._hover = null; }
   cancel() { // a stroke that was interrupted: keep what was drawn, as when the button is released
     this._drag = null;
@@ -410,7 +462,7 @@ export class Doodle {
     const stamping = this.tool === "stamp";
     if (stamping && this.stickerName && this._hover && !this._start && this.hit(...this._hover) < 0 && this.stickers.length < this.maxStickers) {
       this._forDots(this.stickerName, this.stickerScale, this._hover, (x, y) => ghost.push([x, y])); // where a click would place one
-    } else if (this._start && ["line", "box", "oval"].includes(this.tool)) {
+    } else if (this._start && SHAPES.includes(this.tool)) {
       if (layer === this.pixels) layer = this.pixels.slice();
       this._shape(layer, this._start, this._now);
     }
@@ -418,6 +470,9 @@ export class Doodle {
       const [x0, y0, x1, y1] = this._box(this.stickers[this.selected]).map((v, k) => (k < 2 ? v - 2 : v + 1));
       for (let x = x0; x <= x1; x++) for (const y of [y0, y1]) if ((x + y) % 2 === 0) ghost.push([x, y, 255]);
       for (let y = y0; y <= y1; y++) for (const x of [x0, x1]) if ((x + y) % 2 === 0) ghost.push([x, y, 255]);
+    }
+    if (this.showGrid) { // graph-paper crosses where the snap grid's lines meet (faint, and only on bare label)
+      for (let y = 0; y < this.height; y += this.grid) for (let x = 0; x < this.width; x += this.grid) ghost.push([x, y, 70]);
     }
     for (let i = 0; i < layer.length; i++) {
       out[i * 4] = ink[0];

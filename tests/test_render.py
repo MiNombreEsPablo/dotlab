@@ -145,3 +145,15 @@ def test_unprintable_content_gives_a_readable_error(tmp_path):
     ):
         with pytest.raises(core.PrinterError, match=text):
             core.render(spec)
+
+
+def test_pattern_backgrounds_are_the_doodle_tiles_repeated():
+    from dotlab import doodle, render
+
+    for background, tile in render.TILE_BACKGROUNDS.items():
+        assert tile in doodle.INKS and background in core.BACKGROUNDS
+        rows = doodle.INKS[tile]
+        n = len(rows)
+        img = render._background(background)
+        for y, x in ((0, 0), (n + 1, 2 * n + 2), (SH_ := 200, 300)):
+            assert (img.getpixel((x, y)) == 0) == (rows[y % n][x % n] == "#"), (background, x, y)

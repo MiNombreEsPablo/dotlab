@@ -8,6 +8,8 @@ from __future__ import annotations
 import base64
 import binascii
 import io
+import math
+import random
 from functools import lru_cache
 
 from PIL import Image, UnidentifiedImageError
@@ -53,22 +55,51 @@ def canonical(data: str) -> str:
 
 # --- the drawing tools, as data: a client draws, the engine says what there is to draw with --------------------------
 
-TOOLS = ("pen", "square", "italic", "spray", "line", "box", "oval", "fill", "stamp", "eraser")
-INKS = {  # 4x4 dither tiles ("#" is ink), anchored to the label so neighbouring strokes line up
+TOOLS = ("pen", "square", "italic", "spray", "line", "box", "oval", "fbox", "foval", "fill", "stamp", "eraser")
+def _tile(on, size: int = 8) -> tuple:
+    """A dither tile from a rule: `on(x, y)` says whether the dot at (x, y) of the size x size tile is ink."""
+    return tuple("".join("#" if on(x, y) else "." for x in range(size)) for y in range(size))
+
+
+def _noise(seed: int, share: float) -> tuple:
+    rng = random.Random(seed)
+    return _tile(lambda x, y: rng.random() < share)
+
+
+_ZIGZAG = (0, 1, 2, 3, 0, 3, 2, 1)
+_WAVE = (0, 1, 1, 1, 0, 3, 3, 3)
+INKS = {  # dither tiles, 4x4 or 8x8 ("#" is ink), anchored to the label so neighbouring strokes line up
     "solid": ("####",) * 4, "half": ("#.#.", ".#.#", "#.#.", ".#.#"), "quarter": ("#.#.", "....", "#.#.", "...."),
     "lines": ("####", "....", "####", "...."), "diagonal": ("##..", ".##.", "..##", "#..#"),
+    "heavy": ("####", "#.##", "####", "##.#"),
+    "eighth": _tile(lambda x, y: y % 2 == 0 and (x + 2 * (y // 2 % 2)) % 4 == 0),
+    "upright": _tile(lambda x, y: x % 2 == 0),
+    "crosshatch": _tile(lambda x, y: x % 4 == 0 or y % 4 == 0),
+    "bricks": _tile(lambda x, y: y % 4 == 0 or x == (0 if y < 4 else 4)),
+    "waves": _tile(lambda x, y: (y + _WAVE[x]) % 4 == 0),
+    "zigzag": _tile(lambda x, y: (y + _ZIGZAG[x]) % 4 == 0),
+    "diamonds": _tile(lambda x, y: abs(x - 3.5) + abs(y - 3.5) == 4),
+    "rings": _tile(lambda x, y: 2.5 <= math.hypot(x - 3.5, y - 3.5) < 3.5),
+    "plus": _tile(lambda x, y: (x % 4, y % 4) in {(1, 0), (0, 1), (1, 1), (2, 1), (1, 2)}),
+    "dashes": _tile(lambda x, y: (y == 0 and x < 4) or (y == 4 and x >= 4)),
+    "static": _noise(3, 0.3),
+    "snow": _noise(5, 0.12),
 }
-USES_INK = ("pen", "square", "italic", "line", "box", "oval", "fill")  # tools that paint with the chosen pattern
-USES_BRUSH = ("pen", "square", "italic", "spray", "line", "box", "oval", "eraser")  # tools that have a width
+USES_INK = ("pen", "square", "italic", "line", "box", "oval", "fbox", "foval", "fill")  # tools that paint with the chosen pattern
+USES_BRUSH = ("pen", "square", "italic", "spray", "line", "box", "oval", "fbox", "foval", "eraser")  # tools that have a width
 BRUSH = (1, 24, 4)  # width in dots: smallest, largest, start
 STICKER_SCALE = (1, 9, 2)  # stickers are enlarged by whole numbers: smallest, largest, start
 UNDO_LIMIT = 30
 SPRAY_MS = 25  # how often the spray can sprays while the button is held
 LABELS = {
     "pen": "Round brush", "square": "Square brush", "italic": "Calligraphy", "spray": "Spray can", "line": "Line",
-    "box": "Rectangle", "oval": "Ellipse", "fill": "Paint bucket", "stamp": "Sticker (move & resize)", "eraser": "Eraser",
+    "box": "Rectangle", "oval": "Ellipse", "fbox": "Filled rectangle", "foval": "Filled ellipse", "fill": "Paint bucket", "stamp": "Sticker (move & resize)", "eraser": "Eraser",
     "solid": "Solid", "half": "50 % checker", "quarter": "25 % dots", "lines": "Lines", "diagonal": "Diagonal lines",
+    "heavy": "75 % dark", "eighth": "12 % sprinkle", "upright": "Pinstripes", "crosshatch": "Crosshatch", "bricks": "Bricks",
+    "waves": "Waves", "zigzag": "Zigzag", "diamonds": "Diamonds", "rings": "Rings", "plus": "Plus signs",
+    "dashes": "Dashes", "static": "TV static", "snow": "Snow",
 }
+GRID = 8  # the snap grid's spacing, in dots
 
 
 def describe() -> dict:
@@ -76,6 +107,6 @@ def describe() -> dict:
     return {
         "width": W, "height": SH,
         "tools": [[t, LABELS[t]] for t in TOOLS], "inks": [[i, LABELS[i], list(rows)] for i, rows in INKS.items()],
-        "uses_ink": list(USES_INK), "uses_brush": list(USES_BRUSH),
+        "grid": GRID, "uses_ink": list(USES_INK), "uses_brush": list(USES_BRUSH),
         "brush": list(BRUSH), "sticker_scale": list(STICKER_SCALE), "max_stickers": stickers.MAX_PLACED, "undo_limit": UNDO_LIMIT, "spray_ms": SPRAY_MS,
     }

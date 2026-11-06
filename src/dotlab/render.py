@@ -33,6 +33,10 @@ BACKGROUND_FONTS = {"matrix": "DejaVu Sans Mono"}  # backgrounds that draw text,
 HAS_FONTCONFIG = shutil.which("fc-match") is not None  # Linux; Windows/macOS use only the bundled fonts
 ITALIC_SHEAR = 0.25
 BAR_H = 14
+TILE_BACKGROUNDS = {  # backgrounds that are just a doodle ink tile repeated
+    "bricks": "bricks", "waves": "waves", "zigzag": "zigzag", "diamonds": "diamonds", "rings": "rings",
+    "crosshatch": "crosshatch", "static": "static",
+}
 MAX_FONT_SIZE = 120
 # Space a border takes from the edge of the frame; text keeps this much distance plus a gap.
 BORDER_INSET = {
@@ -401,6 +405,14 @@ def _background(name: str) -> Image.Image:  # cached: some are slow and all are 
         _synthwave(img)
     elif name == "matrix":
         _matrix(d)
+    elif name in TILE_BACKGROUNDS:  # the doodle's dither tiles, laid over the whole label
+        rows = doodle.INKS[TILE_BACKGROUNDS[name]]
+        n = len(rows)
+        ink = Image.new("L", (n, n), 255)
+        ink.putdata([0 if c == "#" else 255 for row in rows for c in row])
+        for y in range(0, SH, n):
+            for x in range(0, W, n):
+                img.paste(ink, (x, y))
     elif name == "halftone":
         for row, y in enumerate(range(4, SH, 8)):
             radius = 0.5 + 3.4 * y / SH  # dots swell towards the bottom

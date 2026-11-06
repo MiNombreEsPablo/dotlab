@@ -373,3 +373,79 @@ test("a mask round-trips and starts a fresh undo history", () => {
   d.pixels[0] = 1; // the doodle owns its copy
   assert.equal(mask[0], 0);
 });
+
+// --- filled shapes, Shift, the snap grid, 8x8 patterns -----------------------------------------------------------
+
+test("a filled rectangle is full of the ink's pattern inside a solid outline", () => {
+  const d = make();
+  d.brush = 1;
+  d.ink = "half";
+  stroke(d, "fbox", [[20, 20], [39, 39]]);
+  assert.equal(at(d, 20, 30), 1); // outline is solid even where the checker would be empty
+  assert.equal(at(d, 22, 31) + at(d, 23, 31), 1); // inside: a 50 % checker, one of any two neighbours
+  let inside = 0;
+  for (let y = 21; y < 39; y++) for (let x = 21; x < 39; x++) inside += at(d, x, y);
+  assert.equal(inside, 18 * 18 / 2);
+  assert.equal(at(d, 40, 30), 0);
+});
+
+test("a filled ellipse stays inside its box and leaves the corners empty", () => {
+  const d = make();
+  d.brush = 1;
+  d.ink = "solid";
+  stroke(d, "foval", [[100, 100], [140, 120]]);
+  assert.equal(at(d, 120, 110), 1);
+  assert.equal(at(d, 101, 101), 0);
+  assert.equal(at(d, 139, 119), 0);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (at(d, x, y)) assert.ok(x >= 100 && x <= 140 && y >= 99 && y <= 121, `${x},${y}`);
+});
+
+test("Shift pulls a line to 0, 45 or 90 degrees and a rectangle or ellipse to a square or circle", () => {
+  const d = make();
+  d.brush = 1;
+  d.constrain = true;
+  stroke(d, "line", [[50, 50], [100, 58]]); // nearly horizontal
+  for (let x = 50; x <= 100; x++) assert.equal(at(d, x, 50), 1, `x ${x}`);
+  const e = make();
+  e.brush = 1;
+  e.constrain = true;
+  stroke(e, "line", [[50, 50], [90, 80]]); // closer to the diagonal
+  assert.equal(at(e, 90, 90), 1);
+  const f = make();
+  f.brush = 1;
+  f.constrain = true;
+  stroke(f, "box", [[10, 10], [60, 30]]);
+  assert.equal(at(f, 60, 60), 1); // square: the far corner is at 60,60
+  assert.equal(at(f, 60, 30), 1);
+  const g = make();
+  g.constrain = true;
+  g.tool = "line";
+  g.down(10, 10);
+  g.move(30, 14);
+  const out = g.toRgba(new Uint8ClampedArray(W * H * 4));
+  assert.equal(out[(10 * W + 30) * 4 + 3], 255); // the rubber band shows the constrained line too
+});
+
+test("the snap grid shows faint crosses on bare label only, and snap lands on grid crossings", () => {
+  const d = make();
+  d.showGrid = true;
+  const out = d.toRgba(new Uint8ClampedArray(W * H * 4));
+  assert.ok(out[(16 * W + 24) * 4 + 3] > 0 && out[(16 * W + 24) * 4 + 3] < 255);
+  assert.equal(out[(17 * W + 24) * 4 + 3], 0);
+  assert.deepEqual(d.snap(13, 21), [16, 24]);
+  assert.deepEqual(d.snap(383, 223), [383, 223]); // never off the label
+  d.showGrid = false;
+  assert.equal(d.toRgba(new Uint8ClampedArray(W * H * 4))[(16 * W + 24) * 4 + 3], 0);
+});
+
+test("8x8 pattern tiles repeat every 8 dots, anchored to the label", () => {
+  const rows = ["#.......", "........", "........", "........", "........", "........", "........", "........"];
+  const d = make({ inks: [...INKS, ["dot8", "one in 64", rows]] });
+  d.ink = "dot8";
+  d.brush = 1;
+  stroke(d, "fbox", [[0, 0], [30, 30]]);
+  let inside = 0;
+  for (let y = 1; y < 30; y++) for (let x = 1; x < 30; x++) inside += at(d, x, y);
+  assert.equal(inside, 9); // dots at 8, 16, 24 in each direction
+  assert.equal(at(d, 8, 8) + at(d, 16, 24), 2);
+});

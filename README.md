@@ -46,13 +46,13 @@ seconds (fonts load as you use them), and nothing you make leaves your device. A
   DotGothic16, Yusei Magic, Dela Gothic One and Stick have their own Japanese.
 - **Effects:** dithered shadow, outline, 3D WordArt, glitch, neon glow, scanline text.
 - **Backgrounds:** checker, dots, stripes, dithered gradient, stars, graph paper, scanlines, circuit board, hex grid,
-  synthwave sun, matrix rain, halftone. **Borders:** solid, double, dotted, checker, Win95 bevel, marquee lights,
+  synthwave sun, matrix rain, halftone, bricks, waves, zigzag, diamonds, rings, crosshatch, TV static. **Borders:** solid, double, dotted, checker, Win95 bevel, marquee lights,
   cyber panel, HUD brackets, ruler ticks. **Bars:** under-construction hazard stripes.
 - **QR codes, images** (drag and drop or paste), copies, darkness, saved **presets**. **Image and text together:** put the
-  picture left, right, above, below or behind the text (and QR code), with a size control. Floyd–Steinberg, ordered
-  (Bayer) crosshatch or hard-cutoff dithering; brightness, contrast, gamma, pixelate, mirror, flip and invert.
+  picture left, right, above, below or behind the text (and QR code), with a size control. Floyd–Steinberg, Atkinson
+  (the crisp first-Mac look), ordered (Bayer) crosshatch or hard-cutoff dithering; brightness, contrast, gamma, pixelate, mirror, flip and invert.
   Transparent PNGs print on white and phone photos keep their orientation.
-- **Doodle:** freehand ink on the label with brushes, spray, shapes, fill and 79 pixel stickers in seven themed groups that you can move, resize and delete after placing them (select one and press Delete), with undo and redo (Ctrl+Z, Ctrl+Shift+Z or Ctrl+Y).
+- **Doodle:** freehand ink on the label with brushes, spray, outlined or filled shapes, a paint bucket, 18 dither patterns to paint with (bricks, waves, plus signs, TV static…), Shift for straight lines, squares and circles, a snap-to-grid graph paper mode, and 79 pixel stickers in seven themed groups that you can move, resize and delete after placing them (select one and press Delete), with undo and redo (Ctrl+Z, Ctrl+Shift+Z or Ctrl+Y).
 - **Remembers your work:** the label you were designing is back when you reopen the page (its picture isn't kept: *Save* keeps pictures). *File → New label* starts over.
 - **Save and share:** *Save* writes the label as a normal 1-bit **PNG** with the whole design stored inside it. Any
   image viewer or editor opens it as a picture; Dotlab opens it again for editing (*Open label*, or drop it on the

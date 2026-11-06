@@ -1,7 +1,7 @@
 """Turn a picture file into the grayscale (or already 1-bit) image that gets pasted on the label.
 
 Order: load (transparency over white, EXIF rotation) -> fit -> tone (gamma, brightness, contrast) -> dither.
-The default dither, Floyd-Steinberg, is left to `to_bitmap` (which dithers the whole label); the other modes produce
+The default dither, Floyd-Steinberg, is left to `to_bitmap` (which dithers the whole label); the other modes (Atkinson, ordered, cutoff) produce
 pure black/white here, which `to_bitmap` then passes through untouched.
 """
 from __future__ import annotations
@@ -82,10 +82,46 @@ def ordered_dither(img: Image.Image, n: int) -> Image.Image:
     return above.point(lambda v: 255 if v > 0 else 0)
 
 
+@functools.lru_cache(maxsize=4)  # the preview re-renders on every slider step; this is the slow dither
+def _atkinson(data: bytes, width: int, height: int) -> bytes:
+    pad = 2  # room for the error that spills past the right edge, and a margin so no neighbour test is needed
+    stride = width + 2 * pad
+    work = [0] * (stride * (height + 2))
+    for y in range(height):
+        work[y * stride + pad:y * stride + pad + width] = data[y * width:(y + 1) * width]
+    out = bytearray(width * height)
+    for y in range(height):
+        row = y * stride + pad
+        for x in range(width):
+            i = row + x
+            old = work[i]
+            new = 255 if old >= 128 else 0
+            out[y * width + x] = new
+            share = (old - new) // 8  # a quarter of the error is deliberately dropped: that is what makes it crisp
+            if share:
+                work[i + 1] += share
+                work[i + 2] += share
+                j = i + stride
+                work[j - 1] += share
+                work[j] += share
+                work[j + 1] += share
+                work[j + stride] += share
+    return bytes(out)
+
+
+def atkinson_dither(img: Image.Image) -> Image.Image:
+    """Atkinson error diffusion (the original Macintosh's): only three quarters of each pixel's error is passed on, so
+    highlights and shadows blow out to clean white and black and the mid-tones stay lively."""
+    gray = img.convert("L")
+    return Image.frombytes("L", gray.size, _atkinson(gray.tobytes(), *gray.size))
+
+
 def _dither(img: Image.Image, spec: LabelSpec, *, final: bool) -> Image.Image:
     """Gray to dots per the spec. Floyd-Steinberg is left to `to_bitmap` unless the picture will be enlarged first."""
     if spec.threshold is not None:
         return img.point(lambda v: 255 if v >= spec.threshold else 0)
+    if spec.dither == "atkinson":
+        return atkinson_dither(img)
     if spec.dither == "bayer4":
         return ordered_dither(img, 4)
     if spec.dither == "bayer8":

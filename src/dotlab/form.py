@@ -17,7 +17,8 @@ LABELS = {  # how a choice is worded when `value.capitalize()` isn't enough
     "3d": "3D WordArt", "grid": "Graph paper", "dots": "Polka dots", "bevel": "Win95 bevel",
     "hexgrid": "Hex grid", "matrix": "Matrix rain", "circuit": "Circuit board", "chamfer": "Cyber panel",
     "brackets": "HUD brackets", "ticks": "Ruler ticks", "neon": "Neon glow",
-    "floyd": "Floyd–Steinberg (smooth)", "bayer4": "Ordered 4×4 (crosshatch)", "bayer8": "Ordered 8×8 (finer)",
+    "floyd": "Floyd–Steinberg (smooth)", "atkinson": "Atkinson (crisp, Mac-style)",
+    "static": "TV static", "bayer4": "Ordered 4×4 (crosshatch)", "bayer8": "Ordered 8×8 (finer)",
     "threshold": "Hard cutoff (flat art)",
     "only": "Image only", "left": "Left of text", "right": "Right of text",
     "top": "Above text", "bottom": "Below text", "behind": "Behind text",
@@ -116,8 +117,9 @@ FIELDS = (
     Field("image_size", "number", "Picture size", "image", row="Layout", minimum=20, maximum=80, suffix="%",
           enable_when=("image_layout", _SIDE_LAYOUTS), tip="The picture's share of the label"),
     Field("dither", "choice", "Dither", "image", choices=_choices(spec.DITHERS + ("threshold",)), gate="threshold",
-          tip="Floyd–Steinberg is smooth and best for photos; ordered dithering gives the regular\n"
-              "crosshatch of 90s handheld cameras; a hard cutoff suits flat-colour art."),
+          tip="Floyd–Steinberg is smooth and best for photos; Atkinson is crisper, with the punchy\n"
+              "look of the first Macs; ordered dithering gives the regular crosshatch of 90s handheld\n"
+              "cameras; a hard cutoff suits flat-colour art."),
     Field("threshold", "slider", "Cutoff", "image", minimum=0, maximum=255, default=160,
           show_when=("dither", ("threshold",)), tip="Pixels lighter than this print white, darker print black"),
     Field("brightness", "slider", "Brightness", "image", minimum=-100, maximum=100,

@@ -92,7 +92,7 @@ export function createDoodleWidget(options) {
     tool.setAttribute("aria-label", "Tool");
     for (const [value, label] of info.tools) tool.append(new Option(label, value));
     const ink = el("select", { id: "doodle-ink" });
-    ink.setAttribute("aria-label", "Ink");
+    ink.setAttribute("aria-label", "Pattern");
     for (const [value, label] of info.inks) ink.append(new Option(label, value));
     const [bLo, bHi, bStart] = info.brush;
     const brush = makeSlider({ label: "Brush size", minimum: bLo, maximum: bHi, step: 1, scale: "linear", neutral: 0, zero_label: "", suffix: " dots",
@@ -128,13 +128,17 @@ export function createDoodleWidget(options) {
       part.append(button);
     }
 
+    const snapBox = el("input", { type: "checkbox", id: "doodle-snap" });
+    snapBox.setAttribute("aria-label", "Snap to grid");
+    const snap = el("div", { className: "field toggles bare" }, el("div", { className: "checks" },
+      el("label", { className: "check", title: "Graph paper: strokes, shapes and stickers land on the dots where the faint crosses are" }, snapBox, "Snap to grid")));
     const undo = el("button", { type: "button", className: "gel" }, "Undo");
     const redo = el("button", { type: "button", className: "gel" }, "Redo");
     const clear = el("button", { type: "button", className: "gel" }, "Clear");
     const remove = el("button", { type: "button", className: "gel" }, "Delete sticker");
     const row = (label, control, className = "") => el("div", { className: `field ${className}` }, el("span", { className: "row-title" }, label), control);
     const rows = {
-      ink: row("Ink", ink),
+      ink: row("Pattern", ink),
       brush: row("Brush", brush.root),
       sticker: row("Sticker", grid, "wide"),
       size: row("Size", size.root),
@@ -142,9 +146,9 @@ export function createDoodleWidget(options) {
       hint: el("p", { className: "needs-hint doodle-hint" }, "Click the label to place a sticker. Click a placed one to select it: drag to move, the size slider resizes it, arrow keys nudge it, Delete removes it."),
     };
     const root = el("div", { className: "doodle-tools" },
-      row("Tool", tool), rows.ink, rows.brush, rows.sticker, rows.size, rows.remove, rows.hint,
+      row("Tool", tool), rows.ink, rows.brush, rows.sticker, rows.size, rows.remove, rows.hint, snap,
       el("div", { className: "reset-row buttons" }, undo, redo, clear),
-      el("p", { className: "needs-hint doodle-hint" }, "Draw on the preview."));
+      el("p", { className: "needs-hint doodle-hint" }, "Scribble right on the label! Hold Shift for straight lines, squares and circles."));
 
     function syncTool() {
       doodle.tool = tool.value;
@@ -178,6 +182,7 @@ export function createDoodleWidget(options) {
     }
     tool.addEventListener("input", syncTool);
     ink.addEventListener("input", () => { doodle.ink = ink.value; });
+    snapBox.addEventListener("input", () => { doodle.showGrid = snapBox.checked; redraw(); });
     undo.addEventListener("click", () => { if (doodle.undo()) changed(); });
     redo.addEventListener("click", () => { if (doodle.redo()) changed(); });
     clear.addEventListener("click", () => { if (doodle.clear()) changed(); });
@@ -188,10 +193,10 @@ export function createDoodleWidget(options) {
     // --- pointer: mouse, pen and touch alike -------------------------------------------------------------------
     const at = (event) => {
       const box = overlay.getBoundingClientRect();
-      return [
-        Math.min(width - 1, Math.max(0, Math.floor(((event.clientX - box.left) / box.width) * width))),
-        Math.min(height - 1, Math.max(0, Math.floor(((event.clientY - box.top) / box.height) * height))),
-      ];
+      const x = Math.min(width - 1, Math.max(0, Math.floor(((event.clientX - box.left) / box.width) * width)));
+      const y = Math.min(height - 1, Math.max(0, Math.floor(((event.clientY - box.top) / box.height) * height)));
+      doodle.constrain = event.shiftKey; // Shift is read with every position, so letting go mid-drag lets go of the constraint
+      return doodle.showGrid ? doodle.snap(x, y) : [x, y];
     };
     let spray = null;
     const stopSpray = () => { clearInterval(spray); spray = null; };

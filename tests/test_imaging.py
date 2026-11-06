@@ -245,3 +245,32 @@ def test_adopt_refuses_huge_files(tmp_path, monkeypatch):
     Image.effect_noise((64, 64), 100).convert("RGB").save(path)
     with pytest.raises(ValueError, match="MB"):
         imaging.adopt(path, "big.png")
+
+
+def test_atkinson_is_pure_black_and_white_and_crisper_than_floyd_steinberg():
+    from PIL import Image
+
+    ramp = Image.new("L", (256, 64))
+    ramp.putdata([x for _ in range(64) for x in range(256)])  # black to white, left to right
+    out = imaging.atkinson_dither(ramp)
+    assert set(out.getdata()) == {0, 255} and out.size == ramp.size
+    dark, light = out.crop((0, 0, 24, 64)), out.crop((232, 0, 256, 64))
+    assert dark.histogram()[0] > 0.9 * 24 * 64  # shadows block up solid
+    assert light.histogram()[255] > 0.9 * 24 * 64  # and highlights blow out to clean white
+    mid = out.crop((120, 0, 136, 64))
+    assert 0.35 < mid.histogram()[255] / (16 * 64) < 0.65  # the mid-tones stay a mix
+    assert imaging.atkinson_dither(ramp).tobytes() == out.tobytes()  # deterministic: the browser must match
+
+
+def test_atkinson_is_a_choice_that_reaches_the_label(tmp_path):
+    from PIL import Image
+
+    from dotlab import core
+    from dotlab.spec import LabelSpec
+
+    path = tmp_path / "ramp.png"
+    Image.linear_gradient("L").resize((200, 100)).save(path)
+    floyd = core.render(LabelSpec(image_path=str(path)))
+    atkinson = core.render(LabelSpec(image_path=str(path), dither="atkinson"))
+    assert floyd.tobytes() != atkinson.tobytes()
+    assert atkinson.crop((0, 0, 384, 224)).getcolors() and {c for _, c in atkinson.crop((0, 0, 384, 224)).getcolors()} <= {0, 255}
