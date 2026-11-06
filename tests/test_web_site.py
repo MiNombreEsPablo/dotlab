@@ -32,7 +32,7 @@ def site(tmp_path_factory):
 
 def test_the_site_has_the_page_the_engine_and_the_fonts(site):
     out, manifest, _ = site
-    for name in ("index.html", "main.js", "style.css", "themes.css", "menus.js", ".nojekyll", "assets/icon-mark.png"):
+    for name in ("index.html", "main.js", "style.css", "themes.css", "menus.js", ".nojekyll", "assets/icon-mark.svg", "assets/favicon-32.png", "assets/icon-512.png", "manifest.webmanifest"):
         assert (out / name).is_file(), name
     assert all((out / "engine" / name).is_file() for name in manifest["python"])
     assert json.loads((out / "engine" / "manifest.json").read_text()) == manifest  # a file now, not a dynamic answer

@@ -6,7 +6,7 @@ The site is exactly the layout the dev server fakes: the files of web/, plus
   engine/wheels/            the one dependency Pyodide doesn't have (qrcode), pinned and checked against its SHA-256,
                             so a visit never depends on PyPI
   fonts/*.ttf               the bundled fonts, fetched on demand
-  assets/                   the banner's icon
+  assets/                   the banner's mark, the favicon and the install icons
   licenses.txt              the project's licence and the licence of every bundled font
 Pyodide itself comes from the jsDelivr CDN at the version the manifest names.
 

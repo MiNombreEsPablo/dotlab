@@ -5,7 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content">
 <title>Dotlab</title>
 <link rel="stylesheet" href="themes.css">
-<link rel="icon" href="assets/icon-mark.png">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
 <script>
   /* remember Pyodide, the fonts and the engine between visits (sw.js): fast repeat visits, and it works offline */
   if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
@@ -20,7 +23,7 @@
 <main class="app">
   <nav id="menubar" class="menubar" aria-label="Menu"></nav>
   <header class="banner">
-    <img src="assets/icon-mark.png" alt="">
+    <span class="mark" aria-hidden="true"></span>
     <h1>DOTLAB</h1>
   </header>
 

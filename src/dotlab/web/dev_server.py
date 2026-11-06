@@ -4,7 +4,7 @@ The URL layout is the one the published site will have: the files of web/ as the
   /engine/<module>.py        the engine's Python sources, straight from src/dotlab
   /engine/manifest.json      what the browser has to load (Pyodide version, packages, modules)
   /fonts/<file>.ttf          the bundled fonts, fetched on demand
-  /assets/<file>.png         the few images the page uses (the banner's mark)
+  /assets/<file>            the few images the page uses (the banner's mark, the icons)
   /licenses.txt              the project's licence and every font's, made on the fly
 so the browser build can be built later by copying exactly these files.
 """
@@ -25,11 +25,12 @@ FONTS = PACKAGE / "fonts"
 ENGINE_MODULES = ["__init__.py", "spec.py", "render.py", "imaging.py", "doodle.py", "stickers.py", "layers.py", "sticker_tiles.py", "fonts.py",
                   "protocol.py", "bluetooth.py", "form.py", "composition.py", "presets.py", "about.py", "api.py"]
 ASSETS = PACKAGE / "assets"
-SITE_ASSETS = ["icon-mark.png"]  # what the page uses (the banner's mark)
+SITE_ASSETS = ["icon-mark.svg", "favicon-16.png", "favicon-32.png", "icon-192.png", "icon-512.png"]  # what the page uses (the banner's mark, the favicon, the install icons)
 PYODIDE = "314.0.7"
 mimetypes.add_type("text/javascript", ".js")
 mimetypes.add_type("text/x-python", ".py")
 mimetypes.add_type("font/ttf", ".ttf")
+mimetypes.add_type("application/manifest+json", ".webmanifest")
 
 
 def licenses_text() -> str:

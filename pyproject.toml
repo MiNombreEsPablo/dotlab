@@ -24,7 +24,7 @@ version = {attr = "dotlab.__version__"}
 where = ["src"]
 
 [tool.setuptools.package-data]
-dotlab = ["fonts/*.ttf", "fonts/LICENSES/*", "assets/*", "web/*.html", "web/*.css", "web/*.js", "web/*.mjs", "web/*/*.js", "web/*.py"]
+dotlab = ["fonts/*.ttf", "fonts/LICENSES/*", "assets/*", "web/*.html", "web/*.css", "web/*.js", "web/*.mjs", "web/*.webmanifest", "web/*/*.js", "web/*.py"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

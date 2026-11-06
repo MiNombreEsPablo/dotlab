@@ -66,7 +66,8 @@ def test_the_server_serves_the_page_the_engine_and_fonts_but_not_arbitrary_files
         assert get("/files/browser.js")[0] == 200
         assert get("/licenses.txt")[0] == 200 and b"SIL OPEN FONT LICENSE" in get("/licenses.txt")[2].upper()
         assert get("/presets/local.js")[0] == 200
-        assert get("/assets/icon-mark.png")[0] == 200 and get("/assets/icon-mark.png")[1] == "image/png"
+        assert get("/assets/icon-mark.svg")[0] == 200 and get("/assets/icon-mark.svg")[1] == "image/svg+xml"
+        assert get("/assets/icon-192.png")[1] == "image/png" and get("/manifest.webmanifest")[0] == 200
         assert get("/assets/icon-256.png")[0] == 404  # only what the page uses
         assert get("/dev_server.py")[0] == 404  # python in web/ is never served
         assert get("/../pyproject.toml")[0] == 404 and get("/%2e%2e/pyproject.toml")[0] == 404
