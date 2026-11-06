@@ -17,7 +17,7 @@ STATUS_FLAGS = {0x01: "head open", 0x02: "paper jam", 0x04: "out of paper", 0x08
 def auto_density(data: bytes) -> int:
     """Darkness for a bitmap (1 = white): the more of it is ink, the lower the heat. Measured on a printed dithered photo,
     darkness 1 beat 3 and 7 (dots bleed together and fill the shadows), while sparse text and QR codes want ~7."""
-    ink = 1 - sum(b.bit_count() for b in data) / (len(data) * 8)
+    ink = 1 - bin(int.from_bytes(data, "big")).count("1") / (len(data) * 8)
     return round(7 - 6 * min(1.0, max(0.0, (ink - 0.1) / 0.25)))
 
 
