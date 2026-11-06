@@ -86,6 +86,14 @@ class LabelSpec:
         return cls(**values)
 
 
+# LabelSpec fields from before layers. The engine still reads them for a label that has no `layers` (a stored preset, an
+# old label file), and `render.migrate` (api.migrate) turns such a label into layers when a client loads it.
+LEGACY = frozenset({
+    "text", "qr", "image_path", "image_layout", "image_size", "threshold", "dither", "brightness", "contrast", "gamma",
+    "pixelate", "mirror", "flip", "invert", "font", "bold", "italic", "size", "align", "valign", "effect", "stickers",
+})
+
+
 def layout_hint(spec: LabelSpec) -> str:
     """The text and QR code are silently dropped by the default "Image only" layout: say so, and where to change it.
     Empty when there is nothing to say. Shared by every client, so they all word it the same."""

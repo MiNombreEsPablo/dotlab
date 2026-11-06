@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import functools
+from dataclasses import replace
 import math
 import random
 import shutil
@@ -25,6 +26,7 @@ from .spec import (
     SH,
     VALIGNMENTS,
     W,
+    LEGACY,
     LabelSpec,
 )
 
@@ -698,6 +700,17 @@ def legacy_layers(spec: LabelSpec) -> str:
                 "text", ax0, ay0, text_w, ay1 - ay0, text=spec.text, font=spec.font, bold=spec.bold,
                 italic=spec.italic, size=spec.size, align=spec.align, valign=spec.valign, effect=spec.effect))
     return layers.encode(out)
+
+
+def migrate(label: LabelSpec) -> LabelSpec:
+    """The label made of layers: what the older fields (text, QR, picture, stickers) describe becomes layers and those
+    fields are emptied. A label that has layers already is returned as it is."""
+    if label.layers:
+        return label
+    found = list(layers.parse(legacy_layers(label)))
+    found += [layers.sticker_layer(*placed) for placed in stickers.parse(label.stickers)]
+    defaults = LabelSpec()
+    return replace(label, layers=layers.encode(found), **{name: getattr(defaults, name) for name in LEGACY})
 
 
 def _compose(spec: LabelSpec) -> Image.Image:

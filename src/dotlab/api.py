@@ -67,6 +67,12 @@ def preset_entry(name: str, raw: str | bytes | dict) -> str:
     return json.dumps({"name": presets.clean_name(name), "spec": asdict(label)})
 
 
+def migrate(raw: str | bytes | dict) -> str:
+    """A label from before layers (text, QR, picture and stickers as separate fields, in a stored preset or an old label
+    file) as the same label made of layers, as JSON text. A label that already has layers comes back unchanged."""
+    return json.dumps(asdict(render.migrate(label_from_json(raw))))
+
+
 def composition_dumps(raw: str | bytes | dict) -> bytes:
     """The whole label design as a label file: a PNG of the printed sticker with the design inside it (the picture travels
     inside, the doodle is compact)."""
@@ -76,7 +82,7 @@ def composition_dumps(raw: str | bytes | dict) -> bytes:
 def composition_loads(path: str) -> str:
     """The label in the label file a client wrote to `path`, as JSON text for a client to show; an embedded picture is
     stored where the engine can read it. Raises ValueError with a sentence for the user when it is not a label file."""
-    return json.dumps(asdict(composition.loads(Path(path).read_bytes())))
+    return json.dumps(asdict(render.migrate(composition.loads(Path(path).read_bytes()))))  # an older file opens as layers
 
 
 def adopt_image(path: str, name: str = "") -> str:
@@ -140,6 +146,8 @@ def options() -> str:
         "sticker_groups": [{"label": title, "stickers": list(keys)} for title, keys in stickers.GROUPS],
         "doodle": doodle.describe(),
         "defaults": asdict(spec.LabelSpec()),
+        "layers": {"types": layers.TYPES, "max": layers.MAX_LAYERS, "min_box": layers.MIN_BOX,
+                   "defaults": {t: asdict(layers.Layer(t)) for t in layers.TYPES}},
         "export": {"scales": [[s, spec.export_size_name(s)] for s in spec.EXPORT_SCALES], "extension": ".png"},
         "app": {"name": "Dotlab", "version": __version__, "repo_url": about.REPO_URL,
                 "issues_url": about.ISSUES_URL, "fonts": len(fonts.BUNDLED)},

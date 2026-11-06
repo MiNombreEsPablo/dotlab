@@ -172,9 +172,12 @@ def test_a_label_file_round_trips_through_the_api(tmp_path):
     file = tmp_path / "label.png"
     file.write_bytes(blob)
     back = json.loads(api.composition_loads(str(file)))
-    assert back["text"] == "Hi" and back["border_style"] == "bevel" and back["copies"] == 3
-    assert back["image_layout"] == "left" and back["dither"] == "bayer4"
-    assert back["image_path"] and Path(back["image_path"]).read_bytes() == picture.read_bytes()
+    assert back["border_style"] == "bevel" and back["copies"] == 3
+    assert back["text"] == "" and back["image_path"] == ""  # a label from before layers opens as layers
+    from dotlab import layers
+    pictures = [l for l in layers.parse(back["layers"]) if l.t == "image"]
+    assert [l.dither for l in pictures] == ["bayer4"] and Path(pictures[0].path).read_bytes() == picture.read_bytes()
+    assert [l.text for l in layers.parse(back["layers"]) if l.t == "text"] == ["Hi"]
     assert api.preview_pixels(back) == api.preview_pixels(original)  # the same label
 
 
