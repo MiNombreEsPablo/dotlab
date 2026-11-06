@@ -72,6 +72,8 @@ The product is a web UI (plain HTML/JS, ES modules, **no build step, no framewor
 
 ## Hardware facts (found by calibration — don't re-derive)
 
+- The vendor's CUPS driver (from the USB stick in the box) is analysed in `docs/vendor-driver.md`: its exact TSPL command stream, the `DENSITY 0..30` range, and the `REFERENCE`/`OFFSET`/`SET TEAR|PEEL|CUTTER` lines it sends on every job that we don't (the best lead on the continuous-paper "Label error").
+
 - USB `0483:5743` (no longer used by the app: Bluetooth is the only transport, for parity across platforms; the facts are kept for reference), TSPL, bulk OUT `0x01` / IN `0x82`. Kernel 7.x has no `usblp`; no CUPS needed. Device node is group `lp`, no sudo.
 - 58 mm paper, **384 printable dots** wide at 203 dpi. Label pitch is 240 dots (`SIZE 72 mm,30 mm`, `GAP 2 mm`), but the sticker is only **224 dots** (`core.SH`) tall; anything below that falls in the gap and is lost.
 - TSPL `BITMAP` mode 0: bit 1 = white, 0 = black (same as Pillow mode "1").
