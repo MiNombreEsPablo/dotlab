@@ -144,6 +144,9 @@ LAYER_FIELDS = (
           tip="Above 1.0 lightens the mid-tones, below 1.0 darkens them. Double-click to reset."),
     Field("pixelate", "slider", "Pixelate", "image", minimum=0, maximum=32, zero_label="Off", suffix=" dots",
           tip="Chunky blocks, dithered at the low resolution: 3 gives the look of a 90s handheld camera"),
+    Field("cutout", "slider", "Remove background", "image", minimum=0, maximum=100, zero_label="Off",
+          tip="Makes the picture's flat background see-through, so the paper shows. Drag until the\n"
+              "background is gone; further is looser (a gradient or a photo's sky needs more)."),
     Field("invert", "toggle", "Invert", "image", row="Options"),
     Field("data", "text", "QR", "qr", tip="Anything a phone can scan: a link, a Wi-Fi code, some words"),
     Field("name", "sticker", "Sticker", "sticker"),  # the picker is the client's own (api.options()["sticker_groups"])

@@ -299,3 +299,46 @@ def test_a_turned_qr_code_is_still_drawn_inside_its_box():
 def test_a_turn_is_rounded_to_the_nearest_quarter():
     turns = [l.rot for l in layers.parse('[{"t":"text","rot":100},{"t":"text","rot":-90},{"t":"text","rot":400},{"t":"text","rot":"x"},{"t":"text","rot":270}]')]
     assert turns == [90, 270, 0, 0, 270]
+
+
+def test_a_pngs_transparent_parts_let_the_paper_show_through(tmp_path):
+    """A cut-out (black disc, rest see-through) over a background: the disc prints, the corners keep the pattern."""
+    art = Image.new("RGBA", (100, 100), (0, 0, 0, 0))
+    for y in range(30, 70):
+        for x in range(30, 70):
+            art.putpixel((x, y), (0, 0, 0, 255))
+    path = tmp_path / "cutout.png"
+    art.save(path)
+    box = layers.Layer("image", 0, 0, 100, 100, path=str(path))
+    label = core.LabelSpec(background="checker", layers=layers.encode([box]))
+    plain = core.LabelSpec(background="checker")
+    out, base = render.render(label), render.render(plain)
+    corner = [(x, y) for x in range(0, 20) for y in range(0, 20)]
+    assert all(out.getpixel(p) == base.getpixel(p) for p in corner)  # the pattern shows where the PNG is clear
+    assert all(out.getpixel((x, y)) == 0 for x in range(40, 60) for y in range(40, 60))  # and the picture prints
+    opaque = tmp_path / "opaque.png"
+    Image.new("RGB", (100, 100), "white").save(opaque)  # no transparency: still a white box over the pattern
+    white = core.LabelSpec(background="checker", layers=layers.encode([layers.Layer("image", 0, 0, 100, 100, path=str(opaque))]))
+    assert all(render.render(white).getpixel(p) == 255 for p in corner)
+
+
+def test_remove_background_clears_the_flat_colour_round_a_picture_but_not_a_hole_inside_it(tmp_path):
+    art = Image.new("RGB", (100, 100), "white")  # a black ring on white: no transparency in the file
+    for y in range(100):
+        for x in range(100):
+            if 20 <= ((x - 50) ** 2 + (y - 50) ** 2) ** 0.5 <= 40 and ((x - 50) ** 2 + (y - 50) ** 2) ** 0.5 >= 28:
+                art.putpixel((x, y), (0, 0, 0))
+    path = tmp_path / "ring.png"
+    art.save(path)
+
+    def shown(cutout):
+        box = layers.Layer("image", 0, 0, 100, 100, path=str(path), cutout=cutout, dither="threshold", threshold=128)
+        return render.render(core.LabelSpec(background="checker", layers=layers.encode([box])))
+
+    base = render.render(core.LabelSpec(background="checker"))
+    off, on = shown(0), shown(30)
+    corner = [(x, y) for x in range(0, 12) for y in range(0, 12)]
+    assert all(off.getpixel(p) == 255 for p in corner)  # off: the white box covers the pattern
+    assert all(on.getpixel(p) == base.getpixel(p) for p in corner)  # on: it shows
+    assert on.getpixel((50, 16)) == 0  # the ring itself still prints
+    assert on.getpixel((50, 50)) == 255 and off.getpixel((50, 50)) == 255  # the hole inside the ring is picture, not background
