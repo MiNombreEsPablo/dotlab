@@ -35,7 +35,7 @@ ITALIC_SHEAR = 0.25
 BAR_H = 14
 TILE_BACKGROUNDS = {  # backgrounds that are just a doodle ink tile repeated
     "bricks": "bricks", "waves": "waves", "zigzag": "zigzag", "diamonds": "diamonds", "rings": "rings",
-    "crosshatch": "crosshatch", "static": "static",
+    "crosshatch": "crosshatch",
 }
 MAX_FONT_SIZE = 120
 # Space a border takes from the edge of the frame; text keeps this much distance plus a gap.
@@ -405,6 +405,8 @@ def _background(name: str) -> Image.Image:  # cached: some are slow and all are 
         _synthwave(img)
     elif name == "matrix":
         _matrix(d)
+    elif name == "static":
+        _static(img)
     elif name in TILE_BACKGROUNDS:  # the doodle's dither tiles, laid over the whole label
         rows = doodle.INKS[TILE_BACKGROUNDS[name]]
         n = len(rows)
@@ -419,6 +421,23 @@ def _background(name: str) -> Image.Image:  # cached: some are slow and all are 
             for x in range(4 + 4 * (row % 2), W, 8):
                 d.ellipse([x - radius, y - radius, x + radius, y + radius], fill=0)
     return img
+
+
+def _static(img: Image.Image) -> None:
+    """TV with no signal: random dots over the whole label (no tile to repeat), the density rolling slowly up and down,
+    and a few bands where the dots smear sideways into streaks (seeded, so stable)."""
+    rng = random.Random(13)
+    bands = [(rng.randrange(0, SH - 12), rng.randrange(4, 12)) for _ in range(4)]
+    px = img.load()
+    for y in range(SH):
+        streak = any(top <= y < top + height for top, height in bands)
+        density = 0.2 + 0.08 * math.sin(y / 9) + (0.1 if streak else 0)
+        dark = False
+        for x in range(W):
+            if not (streak and rng.random() < 0.75):  # inside a band most dots just continue the one before
+                dark = rng.random() < density
+            if dark:
+                px[x, y] = 0
 
 
 def _circuit(d: ImageDraw.ImageDraw) -> None:

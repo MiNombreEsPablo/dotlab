@@ -157,3 +157,15 @@ def test_pattern_backgrounds_are_the_doodle_tiles_repeated():
         img = render._background(background)
         for y, x in ((0, 0), (n + 1, 2 * n + 2), (SH_ := 200, 300)):
             assert (img.getpixel((x, y)) == 0) == (rows[y % n][x % n] == "#"), (background, x, y)
+
+
+def test_tv_static_is_random_noise_not_a_repeating_tile():
+    from dotlab import render
+
+    img = render._background("static")
+    dark = img.histogram()[0] / (img.width * img.height)
+    assert 0.12 < dark < 0.4
+    for shift in (4, 8, 16, 32, 64):  # no period in x or y, which is what made the tile look like wallpaper
+        same = sum(img.getpixel((x, y)) == img.getpixel((x + shift, y)) for x in range(100) for y in range(0, 200, 7))
+        assert same < 0.75 * 100 * 29, shift
+    assert img.tobytes() == render._background("static").tobytes()
