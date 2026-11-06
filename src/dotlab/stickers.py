@@ -1,4 +1,5 @@
-"""Our own pixel stickers: 24x24 1-bit icons drawn in code (no image files to ship), enlarged with nearest-neighbour.
+"""Pixel stickers, enlarged with nearest-neighbour. Two sources, no image files to ship: a few shapes drawn in code on a
+24x24 grid (below), and the 16x16 tiles of Kenney's 1-Bit Pack (CC0) in `sticker_tiles.py`.
 
 A label carries its placed stickers as `LabelSpec.stickers` (JSON text: `[[name, centre x, centre y, scale], ...]`), so a
 sticker can still be moved, resized or removed after it is placed. They are drawn under the doodle ink.
@@ -13,6 +14,7 @@ from typing import Callable
 from PIL import Image, ImageDraw
 
 from .spec import SH, W
+from .sticker_tiles import TILES
 
 GRID = 24
 
@@ -26,30 +28,6 @@ def _star(d: ImageDraw.ImageDraw) -> None:
     d.polygon(points, fill=1)
 
 
-def _heart(d: ImageDraw.ImageDraw) -> None:
-    d.ellipse((1, 3, 12, 13), fill=1)
-    d.ellipse((11, 3, 22, 13), fill=1)
-    d.polygon([(1, 10), (22, 10), (11.5, 22)], fill=1)
-
-
-def _smiley(d: ImageDraw.ImageDraw) -> None:
-    d.ellipse((1, 1, 22, 22), outline=1, width=2)
-    d.rectangle((7, 7, 9, 11), fill=1)
-    d.rectangle((14, 7, 16, 11), fill=1)
-    d.arc((5, 5, 18, 18), 20, 160, fill=1, width=2)
-
-
-def _warning(d: ImageDraw.ImageDraw) -> None:
-    d.polygon([(11.5, 1), (23, 22), (0, 22)], fill=1)
-    d.polygon([(11.5, 5), (20, 20), (3, 20)], fill=0)
-    d.rectangle((10, 10, 12, 14), fill=1)
-    d.rectangle((10, 16, 12, 17), fill=1)
-
-
-def _arrow(d: ImageDraw.ImageDraw) -> None:
-    d.polygon([(1, 9), (13, 9), (13, 3), (23, 12), (13, 21), (13, 15), (1, 15)], fill=1)
-
-
 def _up(d: ImageDraw.ImageDraw) -> None:
     for x in (0, 12):
         d.polygon([(x + 5.5, 1), (x + 11, 9), (x + 8, 9), (x + 8, 22), (x + 3, 22), (x + 3, 9), (x, 9)], fill=1)
@@ -57,16 +35,6 @@ def _up(d: ImageDraw.ImageDraw) -> None:
 
 def _bolt(d: ImageDraw.ImageDraw) -> None:
     d.polygon([(14, 0), (4, 13), (11, 13), (8, 23), (20, 9), (13, 9), (18, 0)], fill=1)
-
-
-def _skull(d: ImageDraw.ImageDraw) -> None:
-    d.ellipse((3, 1, 20, 16), fill=1)
-    d.rectangle((7, 13, 16, 21), fill=1)
-    d.ellipse((6, 7, 10, 12), fill=0)
-    d.ellipse((13, 7, 17, 12), fill=0)
-    d.rectangle((11, 13, 12, 15), fill=0)
-    for x in (10, 13):
-        d.line((x, 18, x, 21), fill=0)
 
 
 def _glass(d: ImageDraw.ImageDraw) -> None:
@@ -85,20 +53,63 @@ def _cross(d: ImageDraw.ImageDraw) -> None:
     d.line((19, 4, 4, 19), fill=1, width=4)
 
 
-def _forbidden(d: ImageDraw.ImageDraw) -> None:
-    d.ellipse((1, 1, 22, 22), outline=1, width=3)
-    d.line((4, 19, 19, 4), fill=1, width=3)
+def _sun(d: ImageDraw.ImageDraw) -> None:
+    d.ellipse((6, 6, 17, 17), fill=1)
+    for k in range(8):
+        a = k * math.pi / 4
+        d.line((11.5 + 8.5 * math.cos(a), 11.5 + 8.5 * math.sin(a), 11.5 + 11 * math.cos(a), 11.5 + 11 * math.sin(a)), fill=1, width=3)
+
+
+def _moon(d: ImageDraw.ImageDraw) -> None:
+    d.ellipse((3, 2, 20, 21), fill=1)
+    d.ellipse((9, 0, 26, 19), fill=0)
+
+
+def _cloud(d: ImageDraw.ImageDraw) -> None:
+    for box in ((1, 10, 12, 20), (7, 4, 18, 15), (12, 9, 23, 20)):
+        d.ellipse(box, fill=1)
+    d.rectangle((6, 14, 17, 20), fill=1)
+
+
+_DRAWN: dict[str, tuple[str, Callable[[ImageDraw.ImageDraw], None]]] = {  # drawn on a GRID x GRID image
+    "fragile": ("Fragile glass", _glass), "up": ("This side up", _up), "bolt": ("Lightning", _bolt),
+    "tick": ("Tick", _tick), "cross": ("Cross", _cross),
+    "star": ("Star", _star), "sun": ("Sun", _sun), "moon": ("Moon", _moon), "cloud": ("Cloud", _cloud),
+}
+
+
+def _from_rows(rows):
+    def draw(d: ImageDraw.ImageDraw) -> None:
+        for y, row in enumerate(rows):
+            for x, c in enumerate(row):
+                if c == "1":
+                    d.point((x, y), fill=1)
+    return draw
 
 
 STICKERS: dict[str, tuple[str, Callable[[ImageDraw.ImageDraw], None]]] = {
-    "fragile": ("Fragile glass", _glass), "up": ("This side up", _up), "warning": ("Warning", _warning),
-    "forbidden": ("Forbidden", _forbidden), "skull": ("Skull", _skull), "bolt": ("Lightning", _bolt),
-    "arrow": ("Arrow", _arrow), "heart": ("Heart", _heart), "star": ("Star", _star), "smiley": ("Smiley", _smiley),
-    "tick": ("Tick", _tick), "cross": ("Cross", _cross),
+    **_DRAWN, **{key: (title, _from_rows(rows)) for key, (title, rows) in TILES.items()},
 }
+_SIZES = {key: len(rows) for key, (_, rows) in TILES.items()}  # a sticker is square: its side in dots at scale 1
+
+
+def size(name: str) -> int:
+    """A sticker's side in dots at scale 1 (24 for the ones drawn in code, 16 for the tiles)."""
+    return _SIZES.get(name, GRID)
+
+
 GROUPS = (  # the picker's themes, in order: (title, sticker keys). Every sticker is in exactly one (a test checks).
-    ("Signs & warnings", ("fragile", "up", "warning", "forbidden", "skull", "bolt", "arrow", "tick", "cross")),
-    ("Love & fun", ("heart", "star", "smiley")),
+    ("Signs & marks", ("fragile", "up", "warning", "forbidden", "poison", "bolt", "question", "bang", "plus", "tick", "cross",
+                       "arrow-up", "arrow-right", "arrow-down", "arrow-left")),
+    ("Hearts & faces", ("heart", "heart-line", "heart-broken", "face-smile", "face-laugh", "face-angry", "face-meh",
+                        "bubble-heart", "bubble-smile", "bubble-skull", "bubble-x", "skull", "bone")),
+    ("Treasure & magic", ("key", "key-fancy", "key-skeleton", "potion", "potion-jar", "flask", "hourglass", "trophy", "crown",
+                          "shield", "sword", "bow", "dollar")),
+    ("Critters", ("cat", "dog", "horse", "bird", "duck", "bat", "snake", "croc", "octopus", "spider")),
+    ("Nature & sky", ("sun", "moon", "star", "cloud", "tree", "pine", "cactus", "flame", "campfire")),
+    ("Food", ("apple", "pear", "carrot", "cheese", "steak")),
+    ("Games & music", ("die-2", "die-3", "die-4", "die-5", "die-6", "spade", "card", "rook", "pawn", "gamepad", "handheld",
+                       "mouse", "note", "speaker")),
 )
 MAX_SCALE = 9  # 24 x 9 = 216 dots, still inside the sticker's height
 MAX_PLACED = 40  # stickers on one label
@@ -108,9 +119,10 @@ MAX_PLACED = 40  # stickers on one label
 def mask(name: str, scale: int = 2) -> Image.Image:
     """The sticker as an ink mask (mode "L", 0 or 255), `scale` times enlarged. Shared: never modify it."""
     scale = min(MAX_SCALE, max(1, scale))
-    img = Image.new("1", (GRID, GRID), 0)
+    side = size(name)
+    img = Image.new("1", (side, side), 0)
     STICKERS[name][1](ImageDraw.Draw(img))
-    return img.convert("L").point([0] * 128 + [255] * 128).resize((GRID * scale,) * 2, Image.Resampling.NEAREST)
+    return img.convert("L").point([0] * 128 + [255] * 128).resize((side * scale,) * 2, Image.Resampling.NEAREST)
 
 
 # --- placed stickers: the label's `stickers` text -------------------------------------------------------------------

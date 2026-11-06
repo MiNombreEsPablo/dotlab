@@ -22,7 +22,7 @@ PACKAGE = WEB.parent  # src/dotlab: the web UI lives inside the package, so ever
 FONTS = PACKAGE / "fonts"
 
 # api and what it imports, no more: the browser must not need USB or anything else
-ENGINE_MODULES = ["__init__.py", "spec.py", "render.py", "imaging.py", "doodle.py", "stickers.py", "fonts.py",
+ENGINE_MODULES = ["__init__.py", "spec.py", "render.py", "imaging.py", "doodle.py", "stickers.py", "sticker_tiles.py", "fonts.py",
                   "protocol.py", "bluetooth.py", "form.py", "composition.py", "presets.py", "about.py", "api.py"]
 ASSETS = PACKAGE / "assets"
 SITE_ASSETS = ["icon-mark.png"]  # what the page uses (the banner's mark)

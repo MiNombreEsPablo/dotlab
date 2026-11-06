@@ -61,19 +61,18 @@ def test_doodle_travels_in_a_composition_and_a_bad_type_falls_back():
     assert LabelSpec.from_dict({"doodle": 5}).doodle == ""
 
 
-GRID_DOTS = 24 * 24
-
-
 def test_every_sticker_has_ink_and_fits_the_sticker_at_every_size():
     from dotlab import stickers
 
     for name in stickers.STICKERS:
+        side = stickers.size(name)
+        assert side in (16, 24), name
         for scale in range(1, stickers.MAX_SCALE + 1):
             m = stickers.mask(name, scale)
-            assert m.size == (stickers.GRID * scale,) * 2 and m.getbbox(), (name, scale)
+            assert m.size == (side * scale,) * 2 and m.getbbox(), (name, scale)
             assert m.size[1] <= SH
         hist = stickers.mask(name, 1).histogram()
-        assert hist[0] + hist[255] == GRID_DOTS
+        assert hist[0] + hist[255] == side * side
 
 
 # --- the vocabulary clients draw with (doodle.describe) ---------------------------------------------------------------
@@ -102,7 +101,8 @@ def test_stickers_reach_clients_as_bitmaps_that_match_the_masks():
     assert set(published) == set(stickers.STICKERS)
     for name, sticker in published.items():
         mask = stickers.mask(name, 1)
-        assert len(sticker["rows"]) == stickers.GRID and all(len(r) == stickers.GRID for r in sticker["rows"])
+        side = stickers.size(name)
+        assert len(sticker["rows"]) == side and all(len(r) == side for r in sticker["rows"])
         assert sticker["label"] == stickers.STICKERS[name][0]
         for y, row in enumerate(sticker["rows"]):
             assert all((c == "1") == bool(mask.getpixel((x, y))) for x, c in enumerate(row)), name
@@ -127,7 +127,8 @@ def test_a_browser_canvas_png_is_a_valid_doodle():
 
 # --- placed stickers (LabelSpec.stickers): objects under the ink, not part of it ------------------------------------------
 
-def test_the_largest_sticker_size_fits_the_sticker():
+def test_there_are_plenty_of_stickers_and_the_largest_size_fits_the_sticker():
+    assert len(stickers.STICKERS) >= 70
     assert stickers.GRID * stickers.MAX_SCALE <= SH
 
 
@@ -169,7 +170,7 @@ def test_stickers_never_draw_below_the_sticker_or_off_the_label():
 def test_stickers_alone_are_content_and_travel_in_presets_and_files():
     from dotlab import api
 
-    text = stickers.encode([("heart", 40, 40, 2)])
+    text = stickers.encode([("cat", 40, 40, 2)])
     assert has_content(LabelSpec(stickers=text)) and not has_content(LabelSpec())
     assert composition.loads(composition.dumps(LabelSpec(stickers=text))).stickers == text
     entry = json.loads(api.preset_entry("cats", {"stickers": text, "image_path": "x.png"}))
@@ -186,3 +187,14 @@ def test_every_sticker_is_in_exactly_one_group_and_the_groups_reach_clients():
     groups = json.loads(api.options())["sticker_groups"]
     assert [(g["label"], tuple(g["stickers"])) for g in groups] == list(stickers.GROUPS)
 
+
+def test_the_kenney_tiles_are_square_bitmaps_with_their_licence_shipped():
+    from pathlib import Path
+
+    from dotlab import sticker_tiles
+
+    for key, (title, rows) in sticker_tiles.TILES.items():
+        assert title and len(rows) == 16 and all(len(r) == 16 and set(r) <= {"0", "1"} for r in rows), key
+        assert any("1" in r for r in rows), key
+    licence = Path(stickers.__file__).parent / "assets" / "LICENSE.kenney-1-bit-pack.txt"
+    assert "Creative Commons Zero" in licence.read_text(encoding="utf-8")
