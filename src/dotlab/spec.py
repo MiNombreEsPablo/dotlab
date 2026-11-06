@@ -20,7 +20,7 @@ EFFECTS = ("none", "shadow", "outline", "3d", "glitch", "neon", "scanlines")
 BACKGROUNDS = (
     "none", "checker", "dots", "stripes", "gradient", "stars", "grid",
     "scanlines", "circuit", "hexgrid", "synthwave", "matrix", "halftone",
-    "bricks", "waves", "zigzag", "diamonds", "rings", "crosshatch", "static",
+    "bricks", "waves", "zigzag", "diamonds", "rings", "crosshatch", "static", "vaporwave",
 )
 IMAGE_LAYOUTS = ("only", "left", "right", "top", "bottom", "behind")  # image + text arrangement
 DITHERS = ("floyd", "atkinson", "bayer4", "bayer8")  # images; a hard cutoff is `threshold`

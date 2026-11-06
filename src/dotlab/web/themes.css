@@ -150,6 +150,54 @@
   --banner-text-shadow: 2px 2px 0 #6d0e48;
 }
 
+/* ---- Vaporwave: pastel dusk, lilac plastic with cyan and hot-pink edges (colours only) -------------------------------- */
+:root[data-theme="vaporwave"] {
+  --glow: 0 0 24px rgba(1, 205, 254, .55);
+  --text: #2b1055;
+  --raised: #b967ff;
+  --inset: #b967ff;
+  --window: linear-gradient(#fff0fb 0%, #e6d4ff 55%, #b9e8ff 100%);
+  --window-bottom: #b9e8ff;
+  --panel: linear-gradient(#ffffff, #f3e8ff);
+  --btn: linear-gradient(#ffffff 0%, #f0e2ff 48%, #cfa8ff 50%, #f4eaff 100%);
+  --btn-hot: linear-gradient(#ffffff 0%, #f6edff 48%, #dcbcff 50%, #faf4ff 100%);
+  --btn-down: linear-gradient(#b98cf5 0%, #cfa8ff 48%, #f0e2ff 50%, #ffffff 100%);
+  --btn-off: linear-gradient(#f6f4f8 0%, #eae6ee 48%, #d9d3e0 50%, #efecf3 100%);
+  --hover-border: #ff71ce;
+  --dis-text: #9a8bb5;
+  --placeholder: #6b5a8e;
+  --dis-border: #cbbfe0;
+  --default-bg: linear-gradient(#ffe3f6 0%, #ff9fe0 48%, #ff4fb8 50%, #ff8fd6 100%); /* the Print button: hot pink */
+  --default-bg-down: linear-gradient(#ff4fb8 0%, #ff71ce 48%, #ff9fe0 50%, #ffe3f6 100%);
+  --default-text: #4a0a3a;
+  --default-border: #c2187a;
+  --default-hover: #01cdfe;
+  --default-dis-text: #7a6a86;
+  --default-dis-border: #d4b8cc;
+  --input-text: #2b1055;
+  --input-dis-bg: #f6f0fb;
+  --focus: #01cdfe;
+  --focus-border: #01cdfe;
+  --select-bg: #9a4fe0;
+  --select-arrow: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8'><path d='M1 1l5 5 5-5' fill='none' stroke='%232b1055' stroke-width='2.2'/></svg>");
+  --slider-fill: #ff71ce;
+  --tab-unselected: #6b3aa6;
+  --tab-accent: #01cdfe;
+  --led-on: radial-gradient(circle at 35% 30%, #e6fffb, #05ffa1 45%, #029e66);
+  --led-on-border: #029e66;
+  --led-off: radial-gradient(circle at 35% 30%, #ffffff, #d8c4ee);
+  --led-dis: #ece4f4;
+  --bezel: linear-gradient(#fff3fc 0%, #e3ccff 45%, #c79bff 55%, #8a55c9 100%);
+  --bezel-border: #6f3fae;
+  --screen-border: #3a1d66;
+  --status: #0e6a45;
+  --tip-bg: #fffbb8;
+  --tip-text: #2b1055;
+  --banner: linear-gradient(#ffb3ea 0%, #ff71ce 38%, #b967ff 70%, #01cdfe 100%);
+  --banner-outline: #4b1f8a;
+  --banner-text-shadow: 2px 2px 0 #4b1f8a;
+}
+
 /* ---- Gunmetal: bevelled steel, black LCD fields, lime text -------------------------------------------------------- */
 :root[data-theme="gunmetal"] {
   color-scheme: dark;

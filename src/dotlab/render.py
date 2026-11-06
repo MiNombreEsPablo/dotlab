@@ -405,6 +405,8 @@ def _background(name: str) -> Image.Image:  # cached: some are slow and all are 
                 d.line(pts + [pts[0]], fill=0, width=1)
     elif name == "synthwave":
         _synthwave(img)
+    elif name == "vaporwave":
+        _vaporwave(img)
     elif name == "matrix":
         _matrix(d)
     elif name == "static":
@@ -478,6 +480,40 @@ def _synthwave(img: Image.Image) -> None:
     for k in range(1, 8):
         y = horizon + int((k / 7) ** 2 * (SH - horizon))
         d.line([(0, y), (W, y)], fill=0, width=1)
+
+
+def _vaporwave(img: Image.Image) -> None:
+    """A dithered dusk sky with a ringed planet over an endless checkerboard floor."""
+    d = ImageDraw.Draw(img)
+    px = img.load()
+    horizon, cx = int(SH * 0.52), W // 2
+    for y in range(horizon):  # the sky is clear at the top and gets denser towards the horizon
+        level = 0.55 * (y / horizon) ** 2
+        for x in range(W):
+            if level > (_BAYER[y % 4][x % 4] + 0.5) / 16:
+                px[x, y] = 0
+    px_c, py_c, r = int(W * 0.7), int(horizon * 0.5), 20  # the planet: white disc, outline, a ring tilted across it
+    d.ellipse([px_c - r, py_c - r, px_c + r, py_c + r], fill=255, outline=0, width=2)
+    for y in range(py_c - r + 3, py_c + r - 2, 4):  # a few bands on the planet
+        half = int(math.sqrt(max(0, r * r - (y - py_c) ** 2))) - 2
+        d.line([(px_c - half, y), (px_c + half, y)], fill=0, width=1)
+    d.ellipse([px_c - r - 14, py_c - 5, px_c + r + 14, py_c + 5], outline=0, width=2)
+    d.arc([px_c - r - 14, py_c - 5, px_c + r + 14, py_c + 5], 180, 360, fill=255, width=2)  # the far side hides behind the disc
+    d.arc([px_c - r - 14, py_c - 5, px_c + r + 14, py_c + 5], 180, 360, fill=0, width=1)
+    d.rectangle([0, horizon, W, SH], fill=255)
+    for y in range(horizon + 2, SH):  # the floor: tiles shrink towards the vanishing point
+        t = y - horizon
+        row = int(48 / t * 6)  # equal steps in depth
+        if t < 12:  # the tiles are smaller than a dot here: a haze instead of a moiré
+            for x in range(W):
+                if (x + y) % 2 == 0 and t > 4 or t <= 4 and (x + y) % 4 == 0:
+                    px[x, y] = 0
+            continue
+        for x in range(W):
+            col = math.floor((x - cx) / t * 0.9)
+            if (row + col) % 2:
+                px[x, y] = 0
+    d.line([(0, horizon), (W, horizon)], fill=0, width=2)
 
 
 def _matrix(d: ImageDraw.ImageDraw) -> None:

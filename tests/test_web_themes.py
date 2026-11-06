@@ -27,7 +27,7 @@ def _blocks() -> dict[str, set[str]]:
 
 
 def test_every_look_is_there():
-    assert set(_blocks()) == {"y2k-blue", "y2k-pink", "gunmetal", "handheld", "system"}
+    assert set(_blocks()) == {"y2k-blue", "y2k-pink", "vaporwave", "gunmetal", "handheld", "system"}
 
 
 def test_the_looks_that_stand_alone_define_every_token_so_nothing_leaks_in_from_the_candy_plastic():
@@ -37,9 +37,10 @@ def test_the_looks_that_stand_alone_define_every_token_so_nothing_leaks_in_from_
         assert not missing, f"{look} leaves {sorted(missing)} to be inherited from Y2K Blue"
 
 
-def test_pink_only_override_tokens_that_exist():
+def test_pink_and_vaporwave_only_override_tokens_that_exist():
     blocks = _blocks()
-    assert blocks["y2k-pink"] <= blocks["y2k-blue"], sorted(blocks["y2k-pink"] - blocks["y2k-blue"])
+    for look in ("y2k-pink", "vaporwave"):
+        assert blocks[look] <= blocks["y2k-blue"], sorted(blocks[look] - blocks["y2k-blue"])
 
 
 def test_the_stylesheet_only_uses_tokens_that_are_defined():
@@ -58,7 +59,7 @@ def test_no_colour_is_written_in_a_rule():
 
 def test_the_picker_lists_exactly_the_looks_there_are():
     keys = re.findall(r'\["([a-z0-9-]+)", "[^"]+"\]', (WEB / "themes.js").read_text(encoding="utf-8").split("export const DEFAULT_THEME")[0])
-    assert keys == ["y2k-blue", "y2k-pink", "gunmetal", "handheld", "system"]
+    assert keys == ["y2k-blue", "y2k-pink", "vaporwave", "gunmetal", "handheld", "system"]
     assert set(keys) == set(_blocks())
 
 

@@ -387,7 +387,7 @@ details.sticker-group[open] > summary { margin-bottom: 4px; }
 /* the menu bar: File, Edit, View, Help */
 .menubar {
   position: relative;
-  z-index: 5;
+  z-index: 30; /* above the sticky preview (5), so an open menu is not painted over */
   display: flex;
   gap: 2px;
   padding: 2px 6px;
@@ -423,6 +423,7 @@ details.sticker-group[open] > summary { margin-bottom: 4px; }
   border-radius: var(--r-pane);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
 }
+.menu:last-child .menu-list { left: auto; right: 0; } /* Help is near the right edge: open leftwards, not off the screen */
 .menu-item {
   display: flex;
   justify-content: space-between;

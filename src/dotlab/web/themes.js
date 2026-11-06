@@ -4,6 +4,7 @@
 export const THEMES = [
   ["y2k-blue", "Y2K Blue"],
   ["y2k-pink", "Y2K Pink"],
+  ["vaporwave", "Vaporwave"],
   ["gunmetal", "Gunmetal"],
   ["handheld", "Handheld"],
   ["system", "Plain"],

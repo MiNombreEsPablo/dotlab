@@ -46,7 +46,7 @@ seconds (fonts load as you use them), and nothing you make leaves your device. A
   DotGothic16, Yusei Magic, Dela Gothic One and Stick have their own Japanese.
 - **Effects:** dithered shadow, outline, 3D WordArt, glitch, neon glow, scanline text.
 - **Backgrounds:** checker, dots, stripes, dithered gradient, stars, graph paper, scanlines, circuit board, hex grid,
-  synthwave sun, matrix rain, halftone, bricks, waves, zigzag, diamonds, rings, crosshatch, TV static. **Borders:** solid, double, dotted, checker, Win95 bevel, marquee lights,
+  synthwave sun, vaporwave checkerboard floor, matrix rain, halftone, bricks, waves, zigzag, diamonds, rings, crosshatch, TV static. **Borders:** solid, double, dotted, checker, Win95 bevel, marquee lights,
   cyber panel, HUD brackets, ruler ticks. **Bars:** under-construction hazard stripes.
 - **Layers:** text, pictures, QR codes and stickers are all layers, as many as you like (up to 40). Click one on the label to
   select it, drag to move, drag the corner to resize, arrow keys nudge and Delete removes it; the same inspector edits any
