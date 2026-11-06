@@ -8,6 +8,8 @@ Japanese (日本語). Nothing to install: open the page, design, print.
 
 **→ <https://minombreespablo.github.io/dotlab/>**
 
+<p align="center"><img src="docs/screenshots/dotlab.png" alt="Dotlab: the Layers panel beside a live 1-bit preview of a label with a synthwave background" width="720"></p>
+
 The first (and so far only) supported printer is the **ORGBRO T003**. The name says "dot" because that is all the
 printer has: 384 of them across a 58 mm sticker.
 
