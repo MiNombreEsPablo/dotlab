@@ -617,6 +617,22 @@ def render(spec: LabelSpec) -> Image.Image:
     return img
 
 
+def _turn(img: Image.Image, rot: int) -> Image.Image:
+    """A quarter-turn multiple clockwise (exact: no resampling, so a dot stays a dot)."""
+    if not rot:
+        return img
+    return img.transpose({90: Image.Transpose.ROTATE_270, 180: Image.Transpose.ROTATE_180, 270: Image.Transpose.ROTATE_90}[rot])
+
+
+def _orient(img: Image.Image, layer: layers.Layer) -> Image.Image:
+    """The layer's mirror and flip, then its turn."""
+    if layer.mirror:
+        img = ImageOps.mirror(img)
+    if layer.flip:
+        img = ImageOps.flip(img)
+    return _turn(img, layer.rot)
+
+
 def _compose_layers(spec: LabelSpec) -> Image.Image:
     """Background, then each layer bottom to top. The frame (hazard bars and border) is drawn just before the first sticker
     layer, or after the last layer when there is none: so it is over pictures, QR codes and text, and under stickers."""
@@ -643,13 +659,14 @@ def _compose_layers(spec: LabelSpec) -> Image.Image:
             frame()
             framed = True
         x, y, w, h = layer.x, layer.y, layer.w, layer.h
+        cw, ch = (h, w) if layer.rot in (90, 270) else (w, h)  # the layer's own size, before it is turned
         if layer.t == "image" and layer.path:
             cover = layer.fit == "cover"
-            src = _picture(layer.picture(), (w, h), cover=cover)
+            src = _turn(_picture(layer.picture(), (cw, ch), cover=cover), layer.rot)  # (mirror and flip happen inside, before dithering)
             img.paste(src, (x + (w - src.width) // 2, y + (h - src.height) // 2))
             backdrop = backdrop or cover
         elif layer.t == "qr" and layer.data:
-            qimg = _qr_image(layer.data, min(w, h))
+            qimg = _orient(_qr_image(layer.data, min(w, h)), layer)
             qx, qy = x + (w - qimg.width) // 2, y + (h - qimg.height) // 2
             draw.rectangle([qx - 4, qy - 4, qx + qimg.width + 3, qy + qimg.height + 3], fill=255)  # quiet zone
             img.paste(qimg, (qx, qy))
@@ -661,11 +678,16 @@ def _compose_layers(spec: LabelSpec) -> Image.Image:
             max_size = min(MAX_FONT_SIZE, layer.size) if layer.size > 0 else MAX_FONT_SIZE
             value, alpha = _fit_text_layer(
                 layer.text.replace("\\n", "\n"), path, layer.bold, shear, align,
-                _pick(layer.effect, EFFECTS, "none"), backdrop, w, h, max_size)
-            img.paste(value, (x + {"left": 0, "center": (w - value.width) // 2, "right": w - value.width}[align],
-                              y + {"top": 0, "middle": (h - value.height) // 2, "bottom": h - value.height}[valign]), alpha)
+                _pick(layer.effect, EFFECTS, "none"), backdrop, cw, ch, max_size)
+            sheet = Image.new("L", (cw, ch), 255)  # the text laid out in its own frame (align and valign are in that frame) ...
+            cover_alpha = Image.new("L", (cw, ch), 0)
+            at = ({"left": 0, "center": (cw - value.width) // 2, "right": cw - value.width}[align],
+                  {"top": 0, "middle": (ch - value.height) // 2, "bottom": ch - value.height}[valign])
+            sheet.paste(value, at)
+            cover_alpha.paste(alpha, at)
+            img.paste(_orient(sheet, layer), (x, y), _orient(cover_alpha, layer))  # ... then mirrored, flipped and turned as a whole
         elif layer.t == "sticker" and layer.name:
-            img.paste(0, (x, y), stickers.mask(layer.name, layer.scale))
+            img.paste(0, (x, y), _orient(stickers.mask(layer.name, layer.scale), layer))
     if not framed:
         frame()
     return img

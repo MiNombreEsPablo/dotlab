@@ -42,9 +42,9 @@ def test_every_layer_field_is_a_property_of_a_layer_type_with_valid_choices():
     names = {f.name for f in dataclass_fields(layers.Layer)}
     for field in form.LAYER_FIELDS:
         assert field.name in names, field.name
-        assert field.tab in set(layers.TYPES) | {form.BOX}, field.name
+        assert field.tab in set(layers.TYPES) | {form.BOX, form.ORIENT}, field.name
     for kind in layers.TYPES:
-        _check_rules_and_ranges([f for f in form.LAYER_FIELDS if f.tab in (kind, form.BOX)], layers.Layer(kind), kind)
+        _check_rules_and_ranges([f for f in form.LAYER_FIELDS if f.tab in (kind, form.BOX, form.ORIENT)], layers.Layer(kind), kind)
 
 
 def test_every_spec_field_has_a_control_or_is_legacy_or_pending():

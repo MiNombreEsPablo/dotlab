@@ -343,7 +343,7 @@ details.sticker-group[open] > summary { margin-bottom: 4px; }
 .sticker:hover { border-color: var(--hover-border, var(--raised)); }
 .sticker[aria-pressed="true"] { border-color: var(--focus); background: var(--btn-down); }
 .sticker:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-.reset-row.buttons { justify-content: flex-start; gap: 8px; }
+.reset-row.buttons { flex-wrap: wrap; justify-content: flex-start; gap: 8px; } /* the layer buttons (Rotate, Forward, Back, Duplicate, Delete) wrap rather than run out of the panel */
 .doodle-hint { margin: 8px 0 0; }
 
 /* layers: the list, the inspector, and the selection box over the preview */
